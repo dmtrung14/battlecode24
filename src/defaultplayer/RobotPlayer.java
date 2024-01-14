@@ -1,4 +1,4 @@
-package examplefuncsplayer;
+package defaultplayer;
 
 import battlecode.common.*;
 
@@ -64,9 +64,9 @@ public strictfp class RobotPlayer {
             try {
 
                 if (! rc.isSpawned()) {
-                    //  try spawning
+                    trySpawn(rc)
                 } else {
-                    // DO SOMETHING USEFUL
+                    
                 }
                 
 
@@ -110,5 +110,16 @@ public strictfp class RobotPlayer {
                 int numEnemies = rc.readSharedArray(0);
             }
         }
+    }
+
+    private static void trySpawn(RobotController rc) throws GameActionException {
+        MapLocation[] spawnLocs = rc.getAllySpawnLocations();
+        for(MapLocation loc : spawnLocs) {
+            if(rc.canSpawn(loc)) {
+                rc.spawn(loc);
+                return;
+            }
+        }
+        throw new GameActionException(GameActionExceptionType.CANT_DO_THAT, "can't spawn");
     }
 }
