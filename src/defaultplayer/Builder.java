@@ -6,24 +6,27 @@ import java.util.*;
 
 // the builder unit moves the main flag to the corner during the setup phase and builds traps around it
 public class Builder {
+    public static int FLAG_RUNNER = 2;
+    public static int[] TRAP_BUILDERS = {3, 4, 5};
+
+
     private final RobotController rc;
+    
 
     public Builder(RobotController rc) {
         this.rc = rc;
     }
 
-    public int spawn(MapLocation locoation) throws GameActionException {
+    public int spawn(int myID) throws GameActionException {
         // TODO: spawn closer to main flag? <-- this is probably not necessary
         while (!rc.isSpawned()) {
-
-            
 
             // spawn evenly across all ally spawn locations
             MapLocation[] locs = rc.getAllySpawnLocations();
             rc.spawn(locs[Random.nextInt(locs.length)]);
 
             // set ID for the spawned robot during the setup phase because they don't die
-            if (rc.getRoundNum() < GameConstants.SETUP_ROUNDS) {
+            if (myID == 0) {
                 return Comms.incrementAndGetId(rc)
             }
             return 0;
@@ -66,23 +69,31 @@ public class Builder {
         rc.build(type, loc);
     }
 
-    public void setupPhase() throws GameActionException {
+    public void setupPhase(int myID) throws GameActionException {
         // add exploration and crumb collection?
-        spawn();
-        pickupMainFlag();
-        moveToCorner();
-        rc.dropFlag(rc.getLocation());
+        if (myID == FLAG_RUNNER){
+            pickupMainFlag();
+            moveToCorner();
+            rc.dropFlag(rc.getLocation());
+            return;
+        } else if (Arrays.asList(TRAP_BUILDERS).contains(myID)) {
+            waitAndBuildTrap(TrapType.WATER, rc.getLocation());
+            return;
+        }
+        /* I thought once we place one water trap it automatically fills the water for all squares in radius 3 ? 
         MapLocation[] neighbors = rc.getAllLocationsWithinRadiusSquared(rc.getLocation(), 2);
         for (MapLocation neighbor : neighbors) {
             if (!neighbor.equals(rc.getLocation())) {
                 waitAndBuildTrap(TrapType.WATER, neighbor);
             }
-        }
+        }*/
     }
 
-    public void run() {
+    public void run(int myID) {
         try {
-            setupPhase();
+            if (rc.getRoundNum() < GameConstants.SETUP_ROUNDS) {
+                setupPhase(myID);
+            }
             // TODO: do something after the setup phase
             while (true) {
                 Clock.yield();

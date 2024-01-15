@@ -16,15 +16,12 @@ import java.util.Set;
  */
 public strictfp class RobotPlayer {
 
-    private static int mapWidth;
-    private static int mapHeight;
-    private static MapLocation[] spawnZones;
-    private static int myID;
-    private static MapLocation mainFlag;
-    private static MapLocation[] minorFlags;
-    
-    private static int FLAG_RUNNER = 2;
-    private static int[] TRAP_BUILDERS = {3, 4, 5};
+    public static int mapWidth;
+    public static int mapHeight;
+    public static MapLocation[] spawnZones;
+    public static int myID = 0;
+    public static MapLocation mainFlag;
+    public static MapLocation[] minorFpublic
 
     /** Array containing all the possible movement directions. */
     static final Direction[] directions = {
@@ -57,43 +54,14 @@ public strictfp class RobotPlayer {
 
         while (true) {
             try {
-
-                if (! rc.isSpawned()) {
-                    if (int spawnID = builder.spawn() > 0) {
+                if (!rc.isSpawned()) {
+                    int spawnID = builder.spawn(myID);
+                    if (spawnID > 0) {
                         myID = spawnID;
                     }
                 } else {
-                    // during setup phase
-                    if (rc.getRoundNum() < GameConstants.SETUP_ROUNDS) {
-                        switch (myID) {
-                            case FLAG_RUNNER:
-                                // if main flag in comms is set
-                                if (mainFlag) {
-                                    builder.pickupMainFlag();
-                                    builder.moveToCorner();
-                                    // let's use this duck to back out and build the traps too
-                                } else if {
-                                    // if main flag is successfully placed in the corner
-                                    FLAG_RUNNER = 0; // free the duck from duty
-                                    
-                                }                            
-                                break;
-                            case TRAP_BUILDERS[0]:
-                                break;
-                            case TRAP_BUILDERS[1]:
-                                break;
-                            case TRAP_BUILDERS[2]:
-
-                                builder.moveTo(mainFlag);
-                                break;
-                        }
-                    } else {
-                        // after setup phase
-                        if (myID == 1) {
-
-
+                  builder.run(myID)
                 }
-            }
 
             } catch (GameActionException e) {
                 System.out.println("GameActionException");
@@ -130,5 +98,4 @@ public strictfp class RobotPlayer {
         }
     }
 
-}
 }
