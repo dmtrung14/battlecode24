@@ -31,27 +31,28 @@ public class Setup {
     
     public MapLocation findCorner(MapLocation dam){
         MapLocation secondCoordinateDam = new MapLocation(RobotPlayer.mapWidth - dam.x, RobotPlayer.mapHeight - dam.y);
-        // dam, secondCoordinateDam;
-        // a, b, c, d = 4 corners -> getTeamTerritory
-        // distA = min(A -> dam, A->secondDam)
-        // distB = min(B -> dam ...)
         Team ourTeam = rc.getTeam();
         MapLocation corner1 = new MapLocation(0,0);
         MapLocation corner2 = new MapLocation(0, RobotPlayer.mapHeight - 1);
         MapLocation corner3 = new MapLocation(RobotPlayer.mapWidth - 1, 0);
         MapLocation corner4 = new MapLocation(RobotPlayer.mapWidth - 1, RobotPlayer.mapHeight - 1);
         MapLocation currentCoorRobot = rc.getLocation();
-        int[] distances = {currentCoorRobot.distanceSquaredTo(corner1), currentCoorRobot.distanceSquaredTo(corner2),
-                currentCoorRobot.distanceSquaredTo(corner3), currentCoorRobot.distanceSquaredTo(corner4)};
-
-        int minDistance = Collections.min(Arrays.asList(distances));
-        if(distanceSquaredTo(corner1, currentCoorRobot) == minDistance){
-            Pathfind.BFS(rc, currentCoorRobot, corner1);
-            if(rc.getLocation.equals(corner1)){
-                return rc.getLocation;
+        // Process to find corner
+        Map<MapLocation, Integer> mp = new HashMap<MapLocation, Integer>();
+        mp.push(corner1, distanceSquaredTo(corner1, currentCoorRobot));
+        mp.push(corner2, distanceSquaredTo(corner2, currentCoorRobot));
+        mp.push(corner3, distanceSquaredTo(corner3, currentCoorRobot));
+        mp.push(corner4, distanceSquaredTo(corner4, currentCoorRobot));
+        Set<MapLocation> key = map.keySet();
+        for (MapLocation key : set){
+            Pathfind.BFS(rc, currentCoorRobot, key);
+            if(rc.getLocation().equals(key)){
+                return key;
+            }
+            else{
+                mp.remove(key);
             }
         }
-
     }
 
     
