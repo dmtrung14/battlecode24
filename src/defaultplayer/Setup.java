@@ -5,7 +5,6 @@ import java.lang.Math;
 public class Setup {
 
     private static final int EXPLORE_ROUNDS = 150;
-
     public Setup(RobotController rc) {
         this.rc = rc;
     }
@@ -35,7 +34,7 @@ public class Setup {
                 return rc.getLocation;
             }
         }
-        
+
     }
 
     

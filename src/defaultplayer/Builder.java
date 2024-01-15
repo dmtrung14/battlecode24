@@ -17,17 +17,26 @@ public class Builder {
         this.rc = rc;
     }
 
-    public int spawn(int myID) throws GameActionException {
+    public int spawn(int myID, MapLocation[] locs) throws GameActionException {
         // TODO: spawn closer to main flag? <-- this is probably not necessary
         while (!rc.isSpawned()) {
-
-            // spawn evenly across all ally spawn locations
-            MapLocation[] locs = rc.getAllySpawnLocations();
-            rc.spawn(locs[Random.nextInt(locs.length)]);
+            // too high overhead for getAllySpawnLocations I made it a parameter
 
             // set ID for the spawned robot during the setup phase because they don't die
             if (myID == 0) {
-                return Comms.incrementAndGetId(rc)
+                int newID = Comms.incrementAndGetId(rc);
+                if (Arrays.asList(TRAP_BUILDERS).contains(newID)) {
+                    rc.spawn(locs[newID - 3]) /* spawn at the desired place */
+                } else if (newID == FLAG_RUNNER) {
+                    rc.spawn(/* get location of middle flag */);
+                } else {
+                    rc.spawn(locs[Random.nextInt(locs.length)]);
+                }
+                return newID;
+            } else if (/* some mishaps happened and we need specifications for the spawned robot */ false) {
+                /*spawning algorithms */
+            } else {
+                rc.spawn(locs[Random.nextInt(locs.length)]);
             }
             return 0;
         }
@@ -49,10 +58,9 @@ public class Builder {
         }
     }
 
-    public void pickupMainFlag() throws GameActionException {
+    public void pickupMainFlag(MapLocation flag) throws GameActionException {
         // TODO: calculate location of main flag
         // right now it's hard coded for the default small map
-        MapLocation flag = new MapLocation(27, 12);
         moveTo(flag);
         rc.pickupFlag(rc.getLocation());
     }
