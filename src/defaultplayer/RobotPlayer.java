@@ -21,7 +21,7 @@ public strictfp class RobotPlayer {
     public static MapLocation[] spawnZones;
     public static int myID = 0;
     public static MapLocation mainFlag;
-    public static MapLocation[] minorFpublic
+    public static MapLocation[] minorFlags;
 
     /** Array containing all the possible movement directions. */
     static final Direction[] directions = {
@@ -48,9 +48,9 @@ public strictfp class RobotPlayer {
         mapWidth = rc.getMapWidth();
         mapHeight = rc.getMapHeight();
         spawnZones = rc.getAllySpawnLocations();
-        minorFlags = {spawnZones[0],  spawnZones[2]};
+        minorFlags = {spawnZones[0], spawnZones[2]};
         mainFlag = spawnZones[1];
-        Bulder builder = new Builder(rc);
+        Builder builder = new Builder(rc);
 
         while (true) {
             try {
@@ -60,7 +60,7 @@ public strictfp class RobotPlayer {
                         myID = spawnID;
                     }
                 } else {
-                  builder.run(myID)
+                    builder.run(myID);
                 }
 
             } catch (GameActionException e) {
@@ -78,24 +78,6 @@ public strictfp class RobotPlayer {
         }
 
         // Your code should never reach here (unless it's intentional)! Self-destruction imminent...
-    }
-    public static void updateEnemyRobots(RobotController rc) throws GameActionException{
-        // Sensing methods can be passed in a radius of -1 to automatically 
-        // use the largest possible value.
-        RobotInfo[] enemyRobots = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
-        if (enemyRobots.length != 0){
-            rc.setIndicatorString("There are nearby enemy robots! Scary!");
-            // Save an array of locations with enemy robots in them for future use.
-            MapLocation[] enemyLocations = new MapLocation[enemyRobots.length];
-            for (int i = 0; i < enemyRobots.length; i++){
-                enemyLocations[i] = enemyRobots[i].getLocation();
-            }
-            // Let the rest of our team know how many enemy robots we see!
-            if (rc.canWriteSharedArray(0, enemyRobots.length)){
-                rc.writeSharedArray(0, enemyRobots.length);
-                int numEnemies = rc.readSharedArray(0);
-            }
-        }
     }
 
 }

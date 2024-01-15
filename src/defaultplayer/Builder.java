@@ -8,6 +8,7 @@ import java.util.*;
 public class Builder {
     public static int FLAG_RUNNER = 2;
     public static int[] TRAP_BUILDERS = {3, 4, 5};
+    public static int[] MAIN_FLAG_BUILDERS = {6, 7, 8, 9 , 10}
 
 
     private final RobotController rc;
@@ -26,7 +27,7 @@ public class Builder {
             if (myID == 0) {
                 int newID = Comms.incrementAndGetId(rc);
                 if (Arrays.asList(TRAP_BUILDERS).contains(newID)) {
-                    rc.spawn(locs[newID - 3]) /* spawn at the desired place */
+                    rc.spawn(locs[newID - 3]); /* spawn at the desired place */
                 } else if (newID == FLAG_RUNNER) {
                     rc.spawn(/* get location of middle flag */);
                 } else {
@@ -58,17 +59,42 @@ public class Builder {
         }
     }
 
-    public void pickupMainFlag(MapLocation flag) throws GameActionException {
+    public void pickupMainFlag() throws GameActionException {
         // TODO: calculate location of main flag
         // right now it's hard coded for the default small map
+        MapLocation flag = Setup.getMainFlag();
         moveTo(flag);
         rc.pickupFlag(rc.getLocation());
     }
 
     public void moveToCorner() throws GameActionException {
-        MapLocation corner = new MapLocation(30, 0);
-        moveTo(corner);
+
+        // move most aggressively
+
+        MapLocation corner = Setup.findCorner(); // Replace with the actual corner location
+        
+        while (!rc.getLocation().equals(corner)) {
+            Direction dir = rc.getLocation().directionTo(corner);
+            
+            // Check if there is a wall in the desired direction
+            MapLocation next = rc.getLocation().add(dir);
+            while (!rc.sensePassability(next)) {
+                if (rc.senseMapInfo(next).isWall() || rc.senseMapInfo(next).isDam()) {
+                    /*
+                    // If there is a wall, check if it is a corner
+                     */
+                    dir = dir.rotateLeft();
+                    next = rc.getLocation().add(dir);
+                    
+                }
+                else if (rc.senseMapInfo(next).isWater()) {
+                    rc.fill(next);
+                }
+            }
+            rc.move(dir);
+        }
     }
+
 
     public void waitAndBuildTrap(TrapType type, MapLocation loc) throws GameActionException {
         while (!rc.canBuild(type, loc)) {
@@ -83,18 +109,12 @@ public class Builder {
             pickupMainFlag();
             moveToCorner();
             rc.dropFlag(rc.getLocation());
+            waitAndBuildTrap(TrapType.WATER, rc.getLocation());
             return;
         } else if (Arrays.asList(TRAP_BUILDERS).contains(myID)) {
             waitAndBuildTrap(TrapType.WATER, rc.getLocation());
             return;
         }
-        /* I thought once we place one water trap it automatically fills the water for all squares in radius 3 ? 
-        MapLocation[] neighbors = rc.getAllLocationsWithinRadiusSquared(rc.getLocation(), 2);
-        for (MapLocation neighbor : neighbors) {
-            if (!neighbor.equals(rc.getLocation())) {
-                waitAndBuildTrap(TrapType.WATER, neighbor);
-            }
-        }*/
     }
 
     public void run(int myID) {
@@ -103,9 +123,7 @@ public class Builder {
                 setupPhase(myID);
             }
             // TODO: do something after the setup phase
-            while (true) {
-                Clock.yield();
-            }
+
         } catch (GameActionException e) {
             e.printStackTrace();
         }

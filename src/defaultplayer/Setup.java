@@ -1,10 +1,16 @@
 package defaultplayer;
 
 import battlecode.common.*;
+import scala.collection.Map;
+
 import java.lang.Math;
+import java.util.*;
 public class Setup {
 
     private static final int EXPLORE_ROUNDS = 150;
+    private static final int CORNER;
+    private final RobotController rc;
+
     public Setup(RobotController rc) {
         this.rc = rc;
     }
@@ -12,9 +18,18 @@ public class Setup {
     public static MapLocation runFindDam() throws GameActionException {
         // get the robot id to see if it should be finding dam
         int id = rc.getID();
+        return new MapLocation(0, 0);
+    }
+
+    public static MapLocation getMainFlag() throws GameActionException {
+        return new MapLocation(0, 0);
+    }
+
+    public static MapLocation spawnNearMain() throws GameActionException {
+        
     }
     
-    public static MapLocation corner(MapLocation dam){
+    public MapLocation findCorner(MapLocation dam){
         MapLocation secondCoordinateDam = new MapLocation(RobotPlayer.mapWidth - dam.x, RobotPlayer.mapHeight - dam.y);
         // dam, secondCoordinateDam;
         // a, b, c, d = 4 corners -> getTeamTerritory
@@ -26,8 +41,10 @@ public class Setup {
         MapLocation corner3 = new MapLocation(RobotPlayer.mapWidth - 1, 0);
         MapLocation corner4 = new MapLocation(RobotPlayer.mapWidth - 1, RobotPlayer.mapHeight - 1);
         MapLocation currentCoorRobot = rc.getLocation();
-        int minDistance = min(distanceSquaredTo(corner1, currentCoorRobot), distanceSquaredTo(corner2, currentCoorRobot)
-                                distanceSquaredTo(corner3, currentCoorRobot), distanceSquaredTo(corner4, currentCoorRobot));
+        int[] distances = {currentCoorRobot.distanceSquaredTo(corner1), currentCoorRobot.distanceSquaredTo(corner2),
+                currentCoorRobot.distanceSquaredTo(corner3), currentCoorRobot.distanceSquaredTo(corner4)};
+
+        int minDistance = Collections.min(Arrays.asList(distances));
         if(distanceSquaredTo(corner1, currentCoorRobot) == minDistance){
             Pathfind.BFS(rc, currentCoorRobot, corner1);
             if(rc.getLocation.equals(corner1)){
