@@ -2,6 +2,8 @@ package defaultplayer;
 
 import battlecode.common.*;
 
+import java.util.*;
+
 // the builder unit moves the main flag to the corner during the setup phase and builds traps around it
 public class Builder {
     private final RobotController rc;
@@ -10,24 +12,28 @@ public class Builder {
         this.rc = rc;
     }
 
-    private void spawn() throws GameActionException {
-        // TODO: spawn closer to main flag?
+    public int spawn(MapLocation locoation) throws GameActionException {
+        // TODO: spawn closer to main flag? <-- this is probably not necessary
         while (!rc.isSpawned()) {
+
+            
+
+            // spawn evenly across all ally spawn locations
             MapLocation[] locs = rc.getAllySpawnLocations();
-            for (MapLocation loc : locs) {
-                if (rc.canSpawn(loc)) {
-                    rc.spawn(loc);
-                    return;
-                }
+            rc.spawn(locs[Random.nextInt(locs.length)]);
+
+            // set ID for the spawned robot during the setup phase because they don't die
+            if (rc.getRoundNum() < GameConstants.SETUP_ROUNDS) {
+                return Comms.incrementAndGetId(rc)
             }
-            Clock.yield();
+            return 0;
         }
     }
 
     // TODO: use a better pathfinding algorithm
     // this is temporary and very basic
     // it sometimes goes in circles, it never fills in water, and you can't take any other actions until you reach the destination
-    private void moveTo(MapLocation dest) throws GameActionException {
+    public void moveTo(MapLocation dest) throws GameActionException {
         while (!rc.getLocation().equals(dest)) {
             Direction dir = rc.getLocation().directionTo(dest);
             while (!rc.sensePassability(rc.getLocation().add(dir))) {
@@ -40,7 +46,7 @@ public class Builder {
         }
     }
 
-    private void pickupMainFlag() throws GameActionException {
+    public void pickupMainFlag() throws GameActionException {
         // TODO: calculate location of main flag
         // right now it's hard coded for the default small map
         MapLocation flag = new MapLocation(27, 12);
@@ -48,21 +54,19 @@ public class Builder {
         rc.pickupFlag(rc.getLocation());
     }
 
-    private void moveToCorner() throws GameActionException {
-        // TODO: calculate corner to move flag to
-        // again it's hard coded for the default small map
+    public void moveToCorner() throws GameActionException {
         MapLocation corner = new MapLocation(30, 0);
         moveTo(corner);
     }
 
-    private void waitAndBuildTrap(TrapType type, MapLocation loc) throws GameActionException {
+    public void waitAndBuildTrap(TrapType type, MapLocation loc) throws GameActionException {
         while (!rc.canBuild(type, loc)) {
             Clock.yield();
         }
         rc.build(type, loc);
     }
 
-    private void setupPhase() throws GameActionException {
+    public void setupPhase() throws GameActionException {
         // add exploration and crumb collection?
         spawn();
         pickupMainFlag();

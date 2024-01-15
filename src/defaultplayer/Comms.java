@@ -18,13 +18,18 @@ public class Comms {
     public static void init(RobotController rc) throws GameActionException {
         for (int index : SYM_INDICES) {
             rc.writeSharedArray(index, 1);
-        }
+        } // <-- not sure what is this for ?
     }
 
     // can use this to assign robots roles at the start of the game
     public static int incrementAndGetId(RobotController rc) throws GameActionException {
         int id = rc.readSharedArray(BOT_ID_INDEX);
-        rc.writeSharedArray(BOT_ID_INDEX, id + 1);
+        if (id) {
+            rc.writeSharedArray(BOT_ID_INDEX, id + 1);
+        } else {
+            rc.writeSharedArray(BOT_ID_INDEX, 1);
+            return 1;
+        }
         return id;
     }
 

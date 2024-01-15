@@ -16,20 +16,15 @@ import java.util.Set;
  */
 public strictfp class RobotPlayer {
 
-    /**
-     * We will use this variable to count the number of turns this robot has been alive.
-     * You can use static variables like this to save any information you want. Keep in mind that even though
-     * these variables are static, in Battlecode they aren't actually shared between your robots.
-     */
-    static int turnCount = 0;
-
-    /**
-     * A random number generator.
-     * We will use this RNG to make some random moves. The Random class is provided by the java.util.Random
-     * import at the top of this file. Here, we *seed* the RNG with a constant number (6147); this makes sure
-     * we get the same sequence of numbers every time this code is run. This is very useful for debugging!
-     */
-    static final Random rng = new Random(6147);
+    private static int mapWidth;
+    private static int mapHeight;
+    private static MapLocation[] spawnZones;
+    private static int myID;
+    private static MapLocation mainFlag;
+    private static MapLocation[] minorFlags;
+    
+    private static int FLAG_RUNNER = 2;
+    private static int[] TRAP_BUILDERS = {3, 4, 5};
 
     /** Array containing all the possible movement directions. */
     static final Direction[] directions = {
@@ -53,39 +48,62 @@ public strictfp class RobotPlayer {
     @SuppressWarnings("unused")
     public static void run(RobotController rc) throws GameActionException {
 
-        // Hello world! Standard output is very useful for debugging.
-        // Everything you say here will be directly viewable in your terminal when you run a match!
-        System.out.println("I'm alive");
-
-        // You can also use indicators to save debug notes in replays.
-        rc.setIndicatorString("Hello world!");
+        mapWidth = rc.getMapWidth();
+        mapHeight = rc.getMapHeight();
+        spawnZones = rc.getAllySpawnLocations();
+        minorFlags = {spawnZones[0],  spawnZones[2]};
+        mainFlag = spawnZones[1];
+        Bulder builder = new Builder(rc);
 
         while (true) {
             try {
 
                 if (! rc.isSpawned()) {
-                    trySpawn(rc)
+                    if (int spawnID = builder.spawn() > 0) {
+                        myID = spawnID;
+                    }
                 } else {
-                    
+                    // during setup phase
+                    if (rc.getRoundNum() < GameConstants.SETUP_ROUNDS) {
+                        switch (myID) {
+                            case FLAG_RUNNER:
+                                // if main flag in comms is set
+                                if (mainFlag) {
+                                    builder.pickupMainFlag();
+                                    builder.moveToCorner();
+                                    // let's use this duck to back out and build the traps too
+                                } else if {
+                                    // if main flag is successfully placed in the corner
+                                    FLAG_RUNNER = 0; // free the duck from duty
+                                    
+                                }                            
+                                break;
+                            case TRAP_BUILDERS[0]:
+                                break;
+                            case TRAP_BUILDERS[1]:
+                                break;
+                            case TRAP_BUILDERS[2]:
+
+                                builder.moveTo(mainFlag);
+                                break;
+                        }
+                    } else {
+                        // after setup phase
+                        if (myID == 1) {
+
+
                 }
-                
+            }
 
             } catch (GameActionException e) {
-                // Oh no! It looks like we did something illegal in the Battlecode world. You should
-                // handle GameActionExceptions judiciously, in case unexpected events occur in the game
-                // world. Remember, uncaught exceptions cause your robot to explode!
                 System.out.println("GameActionException");
                 e.printStackTrace();
 
             } catch (Exception e) {
-                // Oh no! It looks like our code tried to do something bad. This isn't a
-                // GameActionException, so it's more likely to be a bug in our code.
                 System.out.println("Exception");
                 e.printStackTrace();
 
             } finally {
-                // Signify we've done everything we want to do, thereby ending our turn.
-                // This will make our code wait until the next turn, and then perform this loop again.
                 Clock.yield();
             }
             // End of loop: go back to the top. Clock.yield() has ended, so it's time for another turn!
@@ -112,14 +130,5 @@ public strictfp class RobotPlayer {
         }
     }
 
-    private static void trySpawn(RobotController rc) throws GameActionException {
-        MapLocation[] spawnLocs = rc.getAllySpawnLocations();
-        for(MapLocation loc : spawnLocs) {
-            if(rc.canSpawn(loc)) {
-                rc.spawn(loc);
-                return;
-            }
-        }
-        throw new GameActionException(GameActionExceptionType.CANT_DO_THAT, "can't spawn");
-    }
+}
 }
