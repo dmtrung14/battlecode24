@@ -48,14 +48,15 @@ public strictfp class RobotPlayer {
         mapWidth = rc.getMapWidth();
         mapHeight = rc.getMapHeight();
         spawnZones = rc.getAllySpawnLocations();
-        minorFlags = {spawnZones[0], spawnZones[2]};
+        minorFlags = new MapLocation[]{spawnZones[0], spawnZones[2]};
         mainFlag = spawnZones[1];
         Builder builder = new Builder(rc);
+        Setup setup = new Setup(rc);
 
         while (true) {
             try {
                 if (!rc.isSpawned()) {
-                    int spawnID = builder.spawn(myID);
+                    int spawnID = setup.spawn(myID, spawnZones);
                     if (spawnID > 0) {
                         myID = spawnID;
                     }

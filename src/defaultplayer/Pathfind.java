@@ -3,6 +3,7 @@ package defaultplayer;
 import battlecode.common.*;
 
 public class Pathfind {
+
     public static void explore(RobotController rc) throws GameActionException {
 
     }
@@ -10,7 +11,7 @@ public class Pathfind {
     // execute these algorithms within vision range
 
     public static void BFS(RobotController rc, MapLocation start, MapLocation end) throws GameActionException {
-        
+        ;
     }
 
     public static void DFS(RobotController rc, MapLocation start, MapLocation end) throws GameActionException {
