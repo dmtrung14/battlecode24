@@ -2,32 +2,28 @@ package defaultplayer;
 
 import battlecode.common.*;
 
+import java.util.*;
+
 // the builder unit moves the main flag to the corner during the setup phase and builds traps around it
 public class Builder {
+    public static int FLAG_RUNNER = 2;
+    public static int[] TRAP_BUILDERS = {3, 4, 5};
+    public static int[] MAIN_FLAG_BUILDERS = {6, 7, 8, 9 , 10};
+
+
     private final RobotController rc;
+    
 
     public Builder(RobotController rc) {
         this.rc = rc;
     }
 
-    private void spawn() throws GameActionException {
-        // TODO: spawn closer to main flag?
-        while (!rc.isSpawned()) {
-            MapLocation[] locs = rc.getAllySpawnLocations();
-            for (MapLocation loc : locs) {
-                if (rc.canSpawn(loc)) {
-                    rc.spawn(loc);
-                    return;
-                }
-            }
-            Clock.yield();
-        }
-    }
+
 
     // TODO: use a better pathfinding algorithm
     // this is temporary and very basic
     // it sometimes goes in circles, it never fills in water, and you can't take any other actions until you reach the destination
-    private void moveTo(MapLocation dest) throws GameActionException {
+    public void moveTo(MapLocation dest) throws GameActionException {
         while (!rc.getLocation().equals(dest)) {
             Direction dir = rc.getLocation().directionTo(dest);
             while (!rc.sensePassability(rc.getLocation().add(dir))) {
@@ -40,51 +36,82 @@ public class Builder {
         }
     }
 
-    private void pickupMainFlag() throws GameActionException {
-        // TODO: calculate location of main flag
-        // right now it's hard coded for the default small map
-        MapLocation flag = new MapLocation(27, 12);
-        moveTo(flag);
-        rc.pickupFlag(rc.getLocation());
-    }
-
-    private void moveToCorner() throws GameActionException {
-        // TODO: calculate corner to move flag to
-        // again it's hard coded for the default small map
-        MapLocation corner = new MapLocation(30, 0);
-        moveTo(corner);
-    }
-
-    private void waitAndBuildTrap(TrapType type, MapLocation loc) throws GameActionException {
+    public void waitAndBuildTrap(TrapType type, MapLocation loc) throws GameActionException {
         while (!rc.canBuild(type, loc)) {
             Clock.yield();
         }
         rc.build(type, loc);
     }
 
-    private void setupPhase() throws GameActionException {
-        // add exploration and crumb collection?
-        spawn();
-        pickupMainFlag();
-        moveToCorner();
-        rc.dropFlag(rc.getLocation());
-        MapLocation[] neighbors = rc.getAllLocationsWithinRadiusSquared(rc.getLocation(), 2);
-        for (MapLocation neighbor : neighbors) {
-            if (!neighbor.equals(rc.getLocation())) {
-                waitAndBuildTrap(TrapType.WATER, neighbor);
+    public void waitAndDig(MapLocation loc) throws GameActionException {
+        while (!rc.canDig(loc)) {
+            MapInfo locInfo = rc.senseMapInfo(loc);
+            if (locInfo.isWall() || locInfo.isWater() || locInfo.isDam() || locInfo.isSpawnZone()){
+                return;
             }
+            Clock.yield();
         }
+        rc.dig(loc);
+
     }
 
-    public void run() {
-        try {
-            setupPhase();
-            // TODO: do something after the setup phase
-            while (true) {
-                Clock.yield();
-            }
-        } catch (GameActionException e) {
-            e.printStackTrace();
+    public void buildCornerDefense(MapLocation loc) throws GameActionException {
+        Direction left = Direction.NORTH;
+        Direction right = Direction.EAST;
+        Direction lr = Direction.SOUTHEAST;
+        Direction rl = Direction.NORTHEAST;
+        int rotation;
+        // set directions in different location cases
+        if (loc.equals(new MapLocation(0,0))) {
+            rotation = 0;
+        } else if (loc.equals(new MapLocation(0, rc.getMapHeight()-1))){
+            rotation = 2;
+        } else if (loc.equals(new MapLocation(rc.getMapWidth() -1, 0))) {
+            rotation = 6;
+        } else {
+            rotation = 4;
         }
+        for (int r = 0; r < rotation; r ++ ) {
+            left = left.rotateRight();
+            right = right.rotateRight();
+            lr = lr.rotateRight();
+            rl = rl.rotateRight();
+        }
+        Direction lro = lr.opposite();
+        // manually go through the desired strategy
+        for (int i = 0; i < 2; i++) {rc.move(left);}
+        waitAndBuildTrap(TrapType.WATER, rc.getLocation());
+        rc.move(lr);
+        waitAndDig(rc.getLocation());
+        waitAndBuildTrap(TrapType.EXPLOSIVE, rc.getLocation());
+        rc.move(lr);
+        waitAndBuildTrap(TrapType.WATER, rc.getLocation());
+        for (int i = 0; i < 2; i ++){rc.move(right);}
+        waitAndBuildTrap(TrapType.WATER, rc.getLocation());
+        rc.move(lro);
+        waitAndDig(rc.getLocation());
+        rc.move(lro);
+        waitAndBuildTrap(TrapType.WATER, rc.getLocation());
+        rc.move(lro);
+        waitAndDig(rc.getLocation());
+        rc.move(lro);
+        waitAndBuildTrap(TrapType.WATER, rc.getLocation());
+        rc.move(rl);
+        waitAndBuildTrap(TrapType.WATER, rc.getLocation());
+        rc.move(rl);
+        waitAndDig(rc.getLocation());
+        rc.move(rl);
+        waitAndBuildTrap(TrapType.WATER, rc.getLocation());
+        rc.move(rl);
+        waitAndDig(rc.getLocation());
+        rc.move(rl);
+        waitAndBuildTrap(TrapType.WATER, rc.getLocation());
+    }
+
+
+
+
+    public void run(int myID) {
+
     }
 }
