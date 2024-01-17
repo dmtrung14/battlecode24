@@ -15,13 +15,10 @@ import java.util.Set;
  * is created!
  */
 public strictfp class RobotPlayer {
-
-    public static int mapWidth;
-    public static int mapHeight;
-    public static MapLocation[] spawnZones;
-    public static int myID = 0;
-    public static MapLocation mainFlag;
     public static MapLocation[] minorFlags;
+
+    public static String indicator;
+
 
     /** Array containing all the possible movement directions. */
     static final Direction[] directions = {
@@ -45,30 +42,16 @@ public strictfp class RobotPlayer {
     @SuppressWarnings("unused")
     public static void run(RobotController rc) throws GameActionException {
 
-        mapWidth = rc.getMapWidth();
-        mapHeight = rc.getMapHeight();
-        spawnZones = rc.getAllySpawnLocations();
-        minorFlags = new MapLocation[]{spawnZones[0], spawnZones[2]};
-        mainFlag = spawnZones[1];
-        Builder builder = new Builder(rc);
+        Constants.mapWidth = rc.getMapWidth();
+        Constants.mapHeight = rc.getMapHeight();
+        Constants.SPAWN_ZONES = rc.getAllySpawnLocations();
         Setup setup = new Setup(rc);
-
+        
         while (true) {
             try {
-                if (!rc.isSpawned()) {
-                    int spawnID = setup.spawn(myID, spawnZones);
-                    if (spawnID > 0) {
-                        myID = spawnID;
-                    }
-                } else {
-                    while (rc.getRoundNum() < GameConstants.SETUP_ROUNDS) {
-                        setup.run(myID);
-                    }
+                if (rc.getRoundNum() <= GameConstants.SETUP_ROUNDS) {
+                    setup.run();
                 }
-
-            } catch (GameActionException e) {
-                System.out.println("GameActionException");
-                e.printStackTrace();
 
             } catch (Exception e) {
                 System.out.println("Exception");
