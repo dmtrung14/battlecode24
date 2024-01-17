@@ -11,16 +11,12 @@ public class Setup {
     public static int[] TRAP_BUILDERS = {3, 4, 5};
     public static int[] MAIN_FLAG_BUILDERS = {6, 7, 8, 9 , 10};
     private static final int EXPLORE_ROUNDS = 150;
-//    private static final int CORNER;
     private static RobotController rc = null;
 
 
 
     public Setup(RobotController rc) {
         this.rc = rc;
-    }
-    public void deployment(){
-
     }
     private static final Builder builder = new Builder(rc);
     private final Random rand = new Random(rc.getID());
