@@ -4,6 +4,12 @@ import battlecode.common.*;
 
 import java.lang.Math;
 import java.util.*;
+
+import com.sun.tools.javac.comp.Check;
+import defaultplayer.util.CheckWrapper.*;
+
+import static defaultplayer.util.CheckWrapper.contains;
+
 public class Setup {
 
     private final RobotController rc;
@@ -24,8 +30,8 @@ public class Setup {
             if (Constants.myID == 0){
                 Constants.myID = Comms.incrementAndGetId(rc);
             }
-            else if (Arrays.asList(Constants.BUILDERS).contains(Constants.myID)){
-                rc.spawn(Constants.SPAWN_ZONES[Constants.myID - 1]);
+            else if (contains(Constants.BUILDERS, Constants.myID)){
+                rc.spawn(Constants.SPAWN_ZONES[9*(Constants.myID - 1) + 4]); //
             }
             else{
                 int randomZone = rand.nextInt(3);
@@ -39,14 +45,25 @@ public class Setup {
         }
     }
 
-    public void pickupFlag(MapLocation flag) throws GameActionException {
-        // TODO: calculate location of main flag
-        // right now it's hard coded for the default small map
-        builder.moveTo(flag);
-        rc.pickupFlag(rc.getLocation());
-    }
+//    public void pickupFlag(MapLocation flag) throws GameActionException {
+//        // TODO: calculate location of main flag
+//        // right now it's hard coded for the default small map
+//        builder.moveTo(flag);
+//        rc.pickupFlag(rc.getLocation());
+//    }
     // Move the flag to a reasonable position
-    public void MoveToGoal(){
+    public void moveToGoal(){
+        try {
+            MapLocation flag = rc.senseNearbyFlags(-1, rc.getTeam())[0].getLocation();
+            if (rc.canPickupFlag(flag)) {
+                rc.pickupFlag(flag);
+            } else if (!rc.hasFlag()){
+                Clock.yield();
+            }
+
+        } catch(GameActionException e) {
+            e.printStackTrace();
+        }
         MapLocation center = new MapLocation(Constants.mapWidth/2, Constants.mapHeight/2);
         Direction next = rc.getLocation().directionTo(center).opposite();
         while(rc.canMove(next) || rc.canFill(rc.getLocation().add(next))){
@@ -64,13 +81,24 @@ public class Setup {
             }
             next = rc.getLocation().directionTo(center).opposite();
         }
+        try {
+            if (rc.hasFlag()){
+                rc.dropFlag(rc.getLocation());
+            }
+        } catch (GameActionException e) {
+            throw new RuntimeException(e);
+        }
     }
     public void run() {
         try {
             if (!rc.isSpawned()){
                 spawn();
             }
-            Pathfind.explore(rc);
+            if (contains(Constants.BUILDERS, Constants.myID)){
+                moveToGoal();
+            } else {
+                Pathfind.explore(rc);
+            }
             // TODO: do something after the setup phase
 
         } catch (GameActionException e) {

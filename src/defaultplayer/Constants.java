@@ -3,7 +3,7 @@ package defaultplayer;
 import java.util.*;
 import battlecode.common.*;
 public class Constants {
-    public static int[] BUILDERS = {1, 2, 3};
+    public static Integer[] BUILDERS = {1, 2, 3};
 
     public static int mapWidth;
     public static int mapHeight;

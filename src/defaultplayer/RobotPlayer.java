@@ -51,6 +51,7 @@ public strictfp class RobotPlayer {
             try {
                 if (rc.getRoundNum() <= GameConstants.SETUP_ROUNDS) {
                     setup.run();
+                    rc.setIndicatorString(String.format("myID: %s", Constants.myID));
                 }
 
             } catch (Exception e) {

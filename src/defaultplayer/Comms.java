@@ -24,7 +24,7 @@ public class Comms {
     // can use this to assign robots roles at the start of the game
     public static int incrementAndGetId(RobotController rc) throws GameActionException {
         int id = rc.readSharedArray(BOT_ID_INDEX);
-        rc.writeSharedArray(BOT_ID_INDEX, 1);
+        rc.writeSharedArray(BOT_ID_INDEX, id + 1);
         return id;
     }
 
