@@ -61,7 +61,9 @@ public strictfp class RobotPlayer {
                         myID = spawnID;
                     }
                 } else {
-                    builder.run(myID);
+                    while (rc.getRoundNum() < GameConstants.SETUP_ROUNDS) {
+                        setup.run(myID);
+                    }
                 }
 
             } catch (GameActionException e) {

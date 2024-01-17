@@ -12,18 +12,18 @@ public class Setup {
     public static int[] MAIN_FLAG_BUILDERS = {6, 7, 8, 9 , 10};
     private static final int EXPLORE_ROUNDS = 150;
 //    private static final int CORNER;
-    private static RobotController rc = null;
-
-
-
+    private final RobotController rc;
+    private final Builder builder;
+    private final Random rand;
     public Setup(RobotController rc) {
+
         this.rc = rc;
+        this.builder = new Builder(rc);
+        this.rand = new Random(rc.getID());
     }
     public void deployment(){
 
     }
-    private static final Builder builder = new Builder(rc);
-    private final Random rand = new Random(rc.getID());
     public static MapLocation runFindDam() throws GameActionException {
         // get the robot id to see if it should be finding dam
         return new MapLocation(0, 0);
@@ -79,10 +79,21 @@ public class Setup {
             if (myID == 0) {
                 int newID = Comms.incrementAndGetId(rc);
                 if (Arrays.asList(TRAP_BUILDERS).contains(newID)) {
+                    while (!rc.canSpawn(locs[newID-3])) {
+                        Clock.yield();
+                    }
                     rc.spawn(locs[newID - 3]); /* spawn at the desired place */
+
                 } else if (newID == FLAG_RUNNER) {
+                    while(!rc.canSpawn(locs[newID])){
+                        Clock.yield();
+                    }
                     rc.spawn(getMainSpawn());
                 } else {
+                    int randSpawn = rand.nextInt(locs.length);
+                    while(!rc.canSpawn(locs[randSpawn])) {
+                        Clock.yield();
+                    }
                     rc.spawn(locs[rand.nextInt(locs.length)]);
                 }
                 return newID;
