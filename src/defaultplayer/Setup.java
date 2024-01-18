@@ -7,6 +7,7 @@ import java.util.*;
 
 import com.sun.tools.javac.comp.Check;
 import defaultplayer.util.CheckWrapper.*;
+import scala.Int;
 
 import static defaultplayer.util.CheckWrapper.contains;
 
@@ -52,52 +53,72 @@ public class Setup {
 //        rc.pickupFlag(rc.getLocation());
 //    }
     // Move the flag to a reasonable position
-    public void moveToGoal() {
-        try {
-            MapLocation flag = rc.senseNearbyFlags(-1, rc.getTeam())[0].getLocation();
-            if (rc.canPickupFlag(flag)) {
-                rc.pickupFlag(flag);
-            } else if (!rc.hasFlag()) {
-                Clock.yield();
-            }
-
-        } catch (GameActionException e) {
-            e.printStackTrace();
+    public void moveToGoal() throws GameActionException {
+        MapLocation flag = rc.senseNearbyFlags(-1, rc.getTeam())[0].getLocation();
+        if (Constants.HAS_MOVED_FLAG) return;
+        else Constants.HAS_MOVED_FLAG = true;
+        if (rc.canPickupFlag(flag)) {
+            rc.pickupFlag(flag);
+        } else if (!rc.hasFlag()) {
+            Clock.yield();
         }
         MapLocation center = new MapLocation(Constants.mapWidth / 2, Constants.mapHeight / 2);
-        Direction next = rc.getLocation().directionTo(center).opposite();
-        while (rc.canMove(next) || rc.canMove(next.rotateLeft()) || rc.canMove(next.rotateRight())
-                || rc.canFill(rc.getLocation().add(next))) {
-            if (rc.canFill(rc.getLocation().add(next))) {
-                try {
+        Queue<Integer> pastDistance = new LinkedList<Integer>();
+        pastDistance.add(rc.getLocation().distanceSquaredTo(center));
+        MapLocation[] nextLocation = Pathfind.avoid(rc, center, pastDistance.remove());
+        while (nextLocation.length > 0) {
+            pastDistance.add(rc.getLocation().distanceSquaredTo(center));
+            for (int i = 0; i < nextLocation.length; i++){
+                Direction dir = rc.getLocation().directionTo(nextLocation[i]);
+                if (rc.canMove(dir)) {
+                    rc.move(dir);
+                } else if (rc.canFill(nextLocation[i])){
                     rc.dropFlag(rc.getLocation());
-                    MapLocation Flag_location = rc.getLocation();
-                    rc.fill(rc.getLocation().add(next));
-                    rc.pickupFlag(Flag_location);
-                } catch (GameActionException e) {
-                    throw new RuntimeException(e);
+                    rc.fill(nextLocation[i]);
+                    rc.pickupFlag(rc.getLocation());
+                    rc.move(dir);
                 }
             }
-            try {
-                if (rc.canMove(next)) {
-                    rc.move(next);
-                } else if (rc.canMove(next.rotateRight())) {
-                    rc.move(next.rotateRight());
-                } else {
-                    rc.move(next.rotateLeft());
-                }
-            } catch (GameActionException e) {
-                throw new RuntimeException(e);
-            }
-            next = rc.getLocation().directionTo(center).opposite();
+            nextLocation = Pathfind.avoid(rc, center, pastDistance.remove());
         }
-        try {
-            if (rc.hasFlag()) {
-                rc.dropFlag(rc.getLocation());
-            }
-        } catch (GameActionException e) {
-            throw new RuntimeException(e);
+        if (rc.hasFlag()) {
+            rc.dropFlag(rc.getLocation());
         }
+    }
+
+    public void buildAroundFlags() {
+
+    }
+
+//    Direction next = rc.getLocation().directionTo(center).opposite();
+//    int pastDistance = center.distanceSquaredTo(flag);
+//        while (rc.canMove(next) || rc.canMove(next.rotateLeft()) || rc.canMove(next.rotateRight())
+//            || rc.canFill(rc.getLocation().add(next))) {
+//        if (rc.canFill(rc.getLocation().add(next))) {
+//            try {
+//                rc.dropFlag(rc.getLocation());
+//                MapLocation Flag_location = rc.getLocation();
+//                rc.fill(rc.getLocation().add(next));
+//                rc.pickupFlag(Flag_location);
+//            } catch (GameActionException e) {
+//                throw new RuntimeException(e);
+//            }
+//        }
+//        if (rc.canMove(next)) {
+//            rc.move(next);
+//        } else if (rc.canMove(next.rotateRight())) {
+//            rc.move(next.rotateRight());
+//        } else {
+//            rc.move(next.rotateLeft());
+//        }
+//        next = rc.getLocation().directionTo(center).opposite();
+//    }
+
+    public boolean isBuilder() {
+        return contains(Constants.BUILDERS, Constants.myID);
+    }
+    public boolean isExplorer() {
+        return 4 <= Constants.myID && Constants.myID <= 4 + (Constants.mapHeight + Constants.mapWidth)/2;
     }
 
     public void run() {
@@ -105,9 +126,11 @@ public class Setup {
             if (!rc.isSpawned()) {
                 spawn();
             }
-            if (contains(Constants.BUILDERS, Constants.myID)) {
-                moveToGoal();
-            } else {
+            if (isBuilder()) {
+                if (rc.getRoundNum() <= Constants.EXPLORE_ROUNDS) {
+                    moveToGoal();
+                }
+            } else if (isExplorer()) {
                 Pathfind.explore(rc);
             }
             // TODO: do something after the setup phase

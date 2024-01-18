@@ -12,4 +12,17 @@ public class Constants {
     public static MapLocation[] SPAWN_ZONES;
     public static final int EXPLORE_ROUNDS = 150;
     public static int myID = 0;
+
+    public static final Direction[] DIRECTIONS = {
+            Direction.NORTH,
+            Direction.NORTHEAST,
+            Direction.EAST,
+            Direction.SOUTHEAST,
+            Direction.SOUTH,
+            Direction.SOUTHWEST,
+            Direction.WEST,
+            Direction.NORTHWEST,
+    };
+
+    public static boolean HAS_MOVED_FLAG = false;
 }

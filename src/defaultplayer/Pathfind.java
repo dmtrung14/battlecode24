@@ -2,7 +2,9 @@ package defaultplayer;
 
 import battlecode.common.*;
 
-import java.util.Random;
+import java.awt.*;
+import java.util.*;
+
 
 public class Pathfind {
     static final Random rng = new Random();
@@ -38,6 +40,28 @@ public class Pathfind {
         if (rc.canMove(dir)) {
             rc.move(dir);
         }
+    }
+
+    public static MapLocation[] avoid(RobotController rc, MapLocation center, int distanceSquared) throws GameActionException {
+        ArrayList<MapLocation> possibleMoves = new ArrayList<MapLocation>();
+        Comparator<MapLocation> comparator = new Comparator<MapLocation>() {
+            public int compare(MapLocation A, MapLocation B) {
+                // sort in reverse order of distance
+                if (A.distanceSquaredTo(center) < B.distanceSquaredTo(center)) return 1;
+                else if (A.distanceSquaredTo(center) > B.distanceSquaredTo(center)) return -1;
+                else return 0;
+            }
+        };
+        for (MapInfo locInfo : rc.senseNearbyMapInfos(2)){
+            MapLocation location = locInfo.getMapLocation();
+            if (location.distanceSquaredTo(center) > distanceSquared && !locInfo.isWall() && !locInfo.isDam()){
+                possibleMoves.add(location);
+            }
+        }
+        possibleMoves.sort(comparator);
+        MapLocation[] results = new MapLocation[possibleMoves.size()];
+        results = possibleMoves.toArray(results);
+        return results;
     }
 
     // execute these algorithms within vision range
