@@ -7,10 +7,11 @@ import java.util.*;
 
 import com.sun.tools.internal.jxc.ap.Const;
 import com.sun.tools.javac.comp.Check;
-import defaultplayer.util.CheckWrapper.*;
+import static defaultplayer.util.CheckWrapper.*;
 import scala.Int;
-
-import static defaultplayer.util.CheckWrapper.contains;
+//
+//import static defaultplayer.util.CheckWrapper.contains;
+//import static defaultplayer.util.CheckWrapper.isBuilder;
 
 public class Setup {
 
@@ -22,11 +23,6 @@ public class Setup {
         this.rc = rc;
         this.builder = new Builder(rc);
         this.rand = new Random(rc.getID());
-    }
-
-    public static MapLocation runFindDam() throws GameActionException {
-        // get the robot id to see if it should be finding dam
-        return new MapLocation(0, 0);
     }
 
     public void spawn() throws GameActionException {
@@ -48,13 +44,6 @@ public class Setup {
         }
     }
 
-    //    public void pickupFlag(MapLocation flag) throws GameActionException {
-//        // TODO: calculate location of main flag
-//        // right now it's hard coded for the default small map
-//        builder.moveTo(flag);
-//        rc.pickupFlag(rc.getLocation());
-//    }
-    // Move the flag to a reasonable position
     public void moveToGoal() throws GameActionException {
         MapLocation flag = rc.senseNearbyFlags(-1, rc.getTeam())[0].getLocation();
         if (Constants.HAS_MOVED_FLAG) return;
@@ -83,8 +72,6 @@ public class Setup {
                 if (i == (nextLocation.length - 1) && rc.getRoundNum() < Constants.FLAG_RUSH_ROUNDS) {
                     i = -1;
                     Clock.yield();
-                } else {
-                    break;
                 }
             }
             Comms.setFlagLocation(rc, rc.getTeam(), Constants.myID - 1, rc.getLocation());
@@ -98,6 +85,44 @@ public class Setup {
         }
     }
 
+    public void moveToCenter() throws GameActionException {
+        if (Constants.MOBILIZED) return;
+        MapLocation center = new MapLocation(Constants.mapWidth / 2, Constants.mapHeight / 2);
+        Queue<Integer> pastDistance = new LinkedList<Integer>();
+        pastDistance.add(rc.getLocation().distanceSquaredTo(center));
+        Direction lastDir = Direction.CENTER;
+        MapLocation[] nextLocation = Pathfind.attract(rc, center, pastDistance.remove());
+        while ((nextLocation.length > 0 || !isNearDam(rc)) && rc.getRoundNum() <= GameConstants.SETUP_ROUNDS) {
+            pastDistance.add(rc.getLocation().distanceSquaredTo(center));
+
+            if (nextLocation.length > 0) {
+                for (int i = 0; i < nextLocation.length; i++) {
+                    Direction dir = rc.getLocation().directionTo(nextLocation[i]);
+                    if (rc.canMove(dir)) {
+                        rc.move(dir);
+                        lastDir = dir;
+                        break;
+                    }
+                    if (i == (nextLocation.length - 1) && rc.getRoundNum() < GameConstants.SETUP_ROUNDS) {
+                        i = -1;
+                        Clock.yield();
+                    }
+                }
+                nextLocation = Pathfind.attract(rc, center, pastDistance.remove());
+            } else {
+                if (rc.canMove(lastDir)) rc.move(lastDir);
+                else if (rc.canMove(lastDir.rotateLeft())) {
+                    rc.move(lastDir.rotateLeft());
+                    lastDir = lastDir.rotateLeft();
+                }
+                else if (rc.canMove(lastDir.rotateRight())) {
+                    rc.move(lastDir.rotateRight());
+                    lastDir = lastDir.rotateRight();
+                }
+            }
+        }
+        Constants.MOBILIZED = true;
+    }
     public void buildAroundFlags() throws GameActionException {
         MapLocation flagLoc = rc.getLocation();
         MapInfo[] around_flag = rc.senseNearbyMapInfos(flagLoc, 1);
@@ -109,12 +134,7 @@ public class Setup {
 
     }
 
-    public boolean isBuilder() {
-        return contains(Constants.BUILDERS, Constants.myID);
-    }
-    public boolean isExplorer() {
-        return 4 <= Constants.myID;
-    }
+
 
     public void run() {
         try {
@@ -129,12 +149,12 @@ public class Setup {
                     Constants.FLAGS[i] = Comms.getFlagLocation(rc, rc.getTeam(), i);
                 }
                 buildAroundFlags();
-
             } else if (isExplorer()) {
                 if (rc.getRoundNum() <= Constants.EXPLORE_ROUNDS) Pathfind.explore(rc);
+                else {
+                    moveToCenter();
+                }
             }
-
-
         } catch (GameActionException e) {
             e.printStackTrace();
         } catch (Exception e) {

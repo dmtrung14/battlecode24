@@ -30,12 +30,15 @@ public strictfp class RobotPlayer {
         Constants.mapHeight = rc.getMapHeight();
         Constants.SPAWN_ZONES = rc.getAllySpawnLocations();
         Setup setup = new Setup(rc);
+        MainPhase main = new MainPhase(rc);
         
         while (true) {
             try {
                 if (rc.getRoundNum() <= GameConstants.SETUP_ROUNDS) {
                     setup.run();
 //                    rc.setIndicatorString(String.format("myID: %s", Constants.myID));
+                } else {
+                    main.run();
                 }
 
 

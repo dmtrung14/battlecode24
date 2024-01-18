@@ -40,6 +40,8 @@ public class Pathfind {
         }
     }
 
+
+
     public static void moveToward(RobotController rc, MapLocation target) throws GameActionException {
         // temporary
         Direction dir = rc.getLocation().directionTo(target);
@@ -95,6 +97,25 @@ public class Pathfind {
         return results;
     }
 
+    public static MapLocation[] attract(RobotController rc, MapLocation center, int distanceSquared) throws GameActionException {
+        ArrayList<MapLocation> possibleMoves = new ArrayList<MapLocation>();
+        Comparator<MapLocation> comparator = new Comparator<MapLocation>() {
+            public int compare(MapLocation A, MapLocation B){
+                return Integer.compare(A.distanceSquaredTo(center), B.distanceSquaredTo(center));
+            }
+        };
+        for (MapInfo locInfo : rc.senseNearbyMapInfos(2)){
+            MapLocation location = locInfo.getMapLocation();
+            if (locInfo.isDam()) return new MapLocation[0];
+            else if (location.distanceSquaredTo(center) <= distanceSquared && !locInfo.isWall() && !locInfo.isWater()){
+                possibleMoves.add(location);
+            }
+        }
+        possibleMoves.sort(comparator);
+        MapLocation[] results = new MapLocation[possibleMoves.size()];
+        results = possibleMoves.toArray(results);
+        return results;
+    }
     // execute these algorithms within vision range
 
     public static void BFS(RobotController rc, MapLocation start, MapLocation end) throws GameActionException {
