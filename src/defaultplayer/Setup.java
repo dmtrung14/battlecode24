@@ -1,154 +1,114 @@
 package defaultplayer;
 
 import battlecode.common.*;
-import scala.collection.Map;
 
 import java.lang.Math;
 import java.util.*;
+
+import com.sun.tools.javac.comp.Check;
+import defaultplayer.util.CheckWrapper.*;
+
+import static defaultplayer.util.CheckWrapper.contains;
+
 public class Setup {
 
-    public static int FLAG_RUNNER = 2;
-    public static int[] TRAP_BUILDERS = {3, 4, 5};
-    public static int[] MAIN_FLAG_BUILDERS = {6, 7, 8, 9 , 10};
-    private static final int EXPLORE_ROUNDS = 150;
-//    private static final int CORNER;
     private final RobotController rc;
     private final Builder builder;
     private final Random rand;
-    public Setup(RobotController rc) {
 
+    public Setup(RobotController rc) {
         this.rc = rc;
         this.builder = new Builder(rc);
         this.rand = new Random(rc.getID());
     }
-    public void deployment(){
 
-    }
     public static MapLocation runFindDam() throws GameActionException {
         // get the robot id to see if it should be finding dam
         return new MapLocation(0, 0);
     }
 
-    public static MapLocation getMainSpawn() throws GameActionException {
-        return new MapLocation(0, 0);
-    }
-
-    public static MapLocation spawnNearMain() throws GameActionException {
-        return new MapLocation(0, 0);
-    }
-    
-    public MapLocation findAllyCorner(MapLocation dam){
-        MapLocation secondCoordinateDam = new MapLocation(RobotPlayer.mapWidth - dam.x, RobotPlayer.mapHeight - dam.y);
-        Team ourTeam = rc.getTeam();
-        MapLocation corner1 = new MapLocation(0,0);
-        MapLocation corner2 = new MapLocation(0, RobotPlayer.mapHeight - 1);
-        MapLocation corner3 = new MapLocation(RobotPlayer.mapWidth - 1, 0);
-        MapLocation corner4 = new MapLocation(RobotPlayer.mapWidth - 1, RobotPlayer.mapHeight - 1);
-        MapLocation currentCoorRobot = rc.getLocation();
-        // Process to find corner
-        HashMap<MapLocation, Integer> mp = new HashMap<MapLocation, Integer>();
-        MapLocation[] corner = new MapLocation[2];
-        mp.put(corner1, currentCoorRobot.distanceSquaredTo(corner1));
-        mp.put(corner2, currentCoorRobot.distanceSquaredTo(corner2));
-        mp.put(corner3, currentCoorRobot.distanceSquaredTo(corner3));
-        mp.put(corner4, currentCoorRobot.distanceSquaredTo(corner4));
-        Set<MapLocation> set = mp.keySet();
-        for (MapLocation key : set){
-            try {
-                Pathfind.BFS(rc, currentCoorRobot, key);
-                if(rc.getLocation().equals(key)){
-                    return key;
-                }
-                else{
-                    mp.remove(key);
-                }
-            } catch (GameActionException e){
-                e.printStackTrace();
-            }
-
-        }
-        return rc.getLocation();
-    }
-
-    public int spawn(int myID, MapLocation[] locs) throws GameActionException {
-        // TODO: spawn closer to main flag? <-- this is probably not necessary
+    public void spawn() throws GameActionException {
         while (!rc.isSpawned()) {
-            // too high overhead for getAllySpawnLocations I made it a parameter
-
-            // set ID for the spawned robot during the setup phase because they don't die
-            if (myID == 0) {
-                int newID = Comms.incrementAndGetId(rc);
-                if (Arrays.asList(TRAP_BUILDERS).contains(newID)) {
-                    while (!rc.canSpawn(locs[newID-3])) {
-                        Clock.yield();
-                    }
-                    rc.spawn(locs[newID - 3]); /* spawn at the desired place */
-
-                } else if (newID == FLAG_RUNNER) {
-                    while(!rc.canSpawn(locs[newID])){
-                        Clock.yield();
-                    }
-                    rc.spawn(getMainSpawn());
-                } else {
-                    int randSpawn = rand.nextInt(locs.length);
-                    while(!rc.canSpawn(locs[randSpawn])) {
-                        Clock.yield();
-                    }
-                    rc.spawn(locs[rand.nextInt(locs.length)]);
-                }
-                return newID;
+            if (Constants.myID == 0) {
+                Constants.myID = Comms.incrementAndGetId(rc);
+            } else if (contains(Constants.BUILDERS, Constants.myID)) {
+                rc.spawn(Constants.SPAWN_ZONES[9 * (Constants.myID - 1) + 4]); //
             } else {
-                rc.spawn(locs[rand.nextInt(locs.length)]);
-            }
-            return 0;
-        }
-        return 0;
-    }
-
-    public void pickupMainFlag() throws GameActionException {
-        // TODO: calculate location of main flag
-        // right now it's hard coded for the default small map
-        MapLocation flag = Setup.getMainSpawn();
-        builder.moveTo(flag);
-        rc.pickupFlag(rc.getLocation());
-    }
-
-    public void moveToCorner() throws GameActionException {
-
-        // move most aggressively
-
-        MapLocation corner = findAllyCorner(Setup.runFindDam()); // Replace with the actual corner location
-
-        while (!rc.getLocation().equals(corner)) {
-            Direction dir = rc.getLocation().directionTo(corner);
-
-            // Check if there is a wall in the desired direction
-            MapLocation next = rc.getLocation().add(dir);
-            while (!rc.sensePassability(next)) {
-                if (rc.senseMapInfo(next).isWall() || rc.senseMapInfo(next).isDam()) {
-                    /*
-                    // If there is a wall, check if it is a corner
-                     */
-                    dir = dir.rotateLeft();
-                    next = rc.getLocation().add(dir);
-
-                }
-                else if (rc.senseMapInfo(next).isWater()) {
-                    rc.fill(next);
+                int randomZone = rand.nextInt(3);
+                for (int i = 27; i >= 1; i--) {
+                    if (rc.canSpawn(Constants.SPAWN_ZONES[(randomZone + i) % 27])) {
+                        rc.spawn(Constants.SPAWN_ZONES[(randomZone + i) % 27]);
+                    }
                 }
             }
-            rc.move(dir);
+
         }
     }
-    public void run(int myID) {
+
+    //    public void pickupFlag(MapLocation flag) throws GameActionException {
+//        // TODO: calculate location of main flag
+//        // right now it's hard coded for the default small map
+//        builder.moveTo(flag);
+//        rc.pickupFlag(rc.getLocation());
+//    }
+    // Move the flag to a reasonable position
+    public void moveToGoal() {
         try {
-            if (myID == FLAG_RUNNER){
-                pickupMainFlag();
-                moveToCorner();
+            MapLocation flag = rc.senseNearbyFlags(-1, rc.getTeam())[0].getLocation();
+            if (rc.canPickupFlag(flag)) {
+                rc.pickupFlag(flag);
+            } else if (!rc.hasFlag()) {
+                Clock.yield();
+            }
+
+        } catch (GameActionException e) {
+            e.printStackTrace();
+        }
+        MapLocation center = new MapLocation(Constants.mapWidth / 2, Constants.mapHeight / 2);
+        Direction next = rc.getLocation().directionTo(center).opposite();
+        while (rc.canMove(next) || rc.canMove(next.rotateLeft()) || rc.canMove(next.rotateRight())
+                || rc.canFill(rc.getLocation().add(next))) {
+            if (rc.canFill(rc.getLocation().add(next))) {
+                try {
+                    rc.dropFlag(rc.getLocation());
+                    MapLocation Flag_location = rc.getLocation();
+                    rc.fill(rc.getLocation().add(next));
+                    rc.pickupFlag(Flag_location);
+                } catch (GameActionException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+            try {
+                if (rc.canMove(next)) {
+                    rc.move(next);
+                } else if (rc.canMove(next.rotateRight())) {
+                    rc.move(next.rotateRight());
+                } else {
+                    rc.move(next.rotateLeft());
+                }
+            } catch (GameActionException e) {
+                throw new RuntimeException(e);
+            }
+            next = rc.getLocation().directionTo(center).opposite();
+        }
+        try {
+            if (rc.hasFlag()) {
                 rc.dropFlag(rc.getLocation());
-                builder.waitAndBuildTrap(TrapType.WATER, rc.getLocation());
-            } else if (Arrays.asList(TRAP_BUILDERS).contains(myID)) {
-                builder.waitAndBuildTrap(TrapType.WATER, rc.getLocation());
+            }
+        } catch (GameActionException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void run() {
+        try {
+            if (!rc.isSpawned()) {
+                spawn();
+            }
+            if (contains(Constants.BUILDERS, Constants.myID)) {
+                moveToGoal();
+            } else {
+                Pathfind.explore(rc);
             }
             // TODO: do something after the setup phase
 
@@ -158,6 +118,4 @@ public class Setup {
             e.printStackTrace();
         }
     }
-
-    
 }
