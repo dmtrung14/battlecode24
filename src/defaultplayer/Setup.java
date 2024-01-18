@@ -5,6 +5,7 @@ import battlecode.common.*;
 import java.lang.Math;
 import java.util.*;
 
+import com.sun.tools.internal.jxc.ap.Const;
 import com.sun.tools.javac.comp.Check;
 import defaultplayer.util.CheckWrapper.*;
 import scala.Int;
@@ -32,6 +33,7 @@ public class Setup {
         while (!rc.isSpawned()) {
             if (Constants.myID == 0) {
                 Constants.myID = Comms.incrementAndGetId(rc);
+                Constants.RANDOM = new Random(Constants.myID);
             } else if (contains(Constants.BUILDERS, Constants.myID)) {
                 rc.spawn(Constants.SPAWN_ZONES[9 * (Constants.myID - 1) + 4]); //
             } else {
@@ -56,33 +58,43 @@ public class Setup {
     public void moveToGoal() throws GameActionException {
         MapLocation flag = rc.senseNearbyFlags(-1, rc.getTeam())[0].getLocation();
         if (Constants.HAS_MOVED_FLAG) return;
-        else Constants.HAS_MOVED_FLAG = true;
         if (rc.canPickupFlag(flag)) {
             rc.pickupFlag(flag);
-        } else if (!rc.hasFlag()) {
-            Clock.yield();
+            Constants.HAS_MOVED_FLAG = true;
         }
         MapLocation center = new MapLocation(Constants.mapWidth / 2, Constants.mapHeight / 2);
         Queue<Integer> pastDistance = new LinkedList<Integer>();
         pastDistance.add(rc.getLocation().distanceSquaredTo(center));
         MapLocation[] nextLocation = Pathfind.avoid(rc, center, pastDistance.remove());
-        while (nextLocation.length > 0) {
+        while (nextLocation.length > 0 && rc.getRoundNum() <= Constants.FLAG_RUSH_ROUNDS) {
             pastDistance.add(rc.getLocation().distanceSquaredTo(center));
             for (int i = 0; i < nextLocation.length; i++){
                 Direction dir = rc.getLocation().directionTo(nextLocation[i]);
                 if (rc.canMove(dir)) {
                     rc.move(dir);
+                    break;
                 } else if (rc.canFill(nextLocation[i])){
                     rc.dropFlag(rc.getLocation());
                     rc.fill(nextLocation[i]);
                     rc.pickupFlag(rc.getLocation());
                     rc.move(dir);
+                    break;
+                }
+                if (i == (nextLocation.length - 1) && rc.getRoundNum() < Constants.FLAG_RUSH_ROUNDS) {
+                    i = -1;
+                    Clock.yield();
+                } else {
+                    break;
                 }
             }
+            Comms.setFlagLocation(rc, rc.getTeam(), Constants.myID - 1, rc.getLocation());
             nextLocation = Pathfind.avoid(rc, center, pastDistance.remove());
         }
-        if (rc.hasFlag()) {
-            rc.dropFlag(rc.getLocation());
+        while (rc.hasFlag()){
+            if (rc.canDropFlag(rc.getLocation())) {
+                rc.dropFlag(rc.getLocation());
+            }
+            Clock.yield();
         }
     }
 
@@ -90,35 +102,11 @@ public class Setup {
 
     }
 
-//    Direction next = rc.getLocation().directionTo(center).opposite();
-//    int pastDistance = center.distanceSquaredTo(flag);
-//        while (rc.canMove(next) || rc.canMove(next.rotateLeft()) || rc.canMove(next.rotateRight())
-//            || rc.canFill(rc.getLocation().add(next))) {
-//        if (rc.canFill(rc.getLocation().add(next))) {
-//            try {
-//                rc.dropFlag(rc.getLocation());
-//                MapLocation Flag_location = rc.getLocation();
-//                rc.fill(rc.getLocation().add(next));
-//                rc.pickupFlag(Flag_location);
-//            } catch (GameActionException e) {
-//                throw new RuntimeException(e);
-//            }
-//        }
-//        if (rc.canMove(next)) {
-//            rc.move(next);
-//        } else if (rc.canMove(next.rotateRight())) {
-//            rc.move(next.rotateRight());
-//        } else {
-//            rc.move(next.rotateLeft());
-//        }
-//        next = rc.getLocation().directionTo(center).opposite();
-//    }
-
     public boolean isBuilder() {
         return contains(Constants.BUILDERS, Constants.myID);
     }
     public boolean isExplorer() {
-        return 4 <= Constants.myID && Constants.myID <= 4 + (Constants.mapHeight + Constants.mapWidth)/2;
+        return 4 <= Constants.myID;
     }
 
     public void run() {
@@ -127,7 +115,7 @@ public class Setup {
                 spawn();
             }
             if (isBuilder()) {
-                if (rc.getRoundNum() <= Constants.EXPLORE_ROUNDS) {
+                if (rc.getRoundNum() <= Constants.FLAG_RUSH_ROUNDS) {
                     moveToGoal();
                 }
             } else if (isExplorer()) {

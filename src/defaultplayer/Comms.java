@@ -41,6 +41,8 @@ public class Comms {
         }
     }
 
+
+
     // whether the map might have a certain type of symmetry
     public static boolean getSymmetry(RobotController rc, Symmetry sym) throws GameActionException {
         int index = symmetryIndex(sym);

@@ -1,6 +1,7 @@
 package defaultplayer;
 
 import battlecode.common.*;
+import com.sun.tools.internal.jxc.ap.Const;
 
 import java.awt.*;
 import java.util.*;
@@ -50,17 +51,42 @@ public class Pathfind {
     public static MapLocation[] avoid(RobotController rc, MapLocation center, int distanceSquared) throws GameActionException {
         ArrayList<MapLocation> possibleMoves = new ArrayList<MapLocation>();
         Comparator<MapLocation> comparator = new Comparator<MapLocation>() {
-            public int compare(MapLocation A, MapLocation B) {
+            public int compare(MapLocation A, MapLocation B){
                 // sort in reverse order of distance
-                if (A.distanceSquaredTo(center) < B.distanceSquaredTo(center)) return 1;
-                else if (A.distanceSquaredTo(center) > B.distanceSquaredTo(center)) return -1;
-                else return 0;
+                MapLocation current = rc.getLocation();
+                int minDistanceToOtherA = Integer.MAX_VALUE;
+                int minDistanceToOtherB = Integer.MAX_VALUE;
+                for (int j = 0; j < 3; j ++ ){
+                    try {
+                        if (j + 1 != Constants.myID && current.distanceSquaredTo(Comms.getFlagLocation(rc, rc.getTeam(), j)) < minDistanceToOtherA){
+                            minDistanceToOtherA = A.distanceSquaredTo(Comms.getFlagLocation(rc, rc.getTeam(), j));
+                        }
+                        if (j + 1 != Constants.myID && current.distanceSquaredTo(Comms.getFlagLocation(rc, rc.getTeam(), j)) < minDistanceToOtherB){
+                            minDistanceToOtherB = B.distanceSquaredTo(Comms.getFlagLocation(rc, rc.getTeam(), j));
+                        }
+
+                    } catch (GameActionException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+                if (A.equals(current.add(current.directionTo(center).opposite()))) return -1;
+                else if (B.equals(current.add(current.directionTo(center).opposite()))) return 1;
+                else if (minDistanceToOtherA != minDistanceToOtherB) return Integer.compare(minDistanceToOtherA, minDistanceToOtherB);
+                else return Integer.compare(B.distanceSquaredTo(center), A.distanceSquaredTo(center));
             }
         };
         for (MapInfo locInfo : rc.senseNearbyMapInfos(2)){
             MapLocation location = locInfo.getMapLocation();
-            if (location.distanceSquaredTo(center) > distanceSquared && !locInfo.isWall() && !locInfo.isDam()){
-                possibleMoves.add(location);
+            if (location.distanceSquaredTo(center) >= distanceSquared && !locInfo.isWall() && !locInfo.isDam()){
+                // check if current flag location is at least 6 from both the other 2 flags:
+                boolean valid = true;
+                for (int j = 0; j < 3; j ++ ){
+                    if (j + 1 != Constants.myID && location.distanceSquaredTo(Comms.getFlagLocation(rc, rc.getTeam(), j)) < 36){
+                        valid = false;
+                        break;
+                    }
+                }
+                if (valid) possibleMoves.add(location);
             }
         }
         possibleMoves.sort(comparator);

@@ -15,22 +15,6 @@ import java.util.Set;
  * is created!
  */
 public strictfp class RobotPlayer {
-    public static MapLocation[] minorFlags;
-
-    public static String indicator;
-
-
-    /** Array containing all the possible movement directions. */
-    static final Direction[] directions = {
-        Direction.NORTH,
-        Direction.NORTHEAST,
-        Direction.EAST,
-        Direction.SOUTHEAST,
-        Direction.SOUTH,
-        Direction.SOUTHWEST,
-        Direction.WEST,
-        Direction.NORTHWEST,
-    };
 
     /**
      * run() is the method that is called when a robot is instantiated in the Battlecode world.
