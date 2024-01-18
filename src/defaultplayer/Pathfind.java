@@ -15,31 +15,36 @@ public class Pathfind {
         if (crumbs.length > 0) {
             moveToward(rc, crumbs[0]);
         }
+        MapLocation loc = rc.getLocation();
+        // move away from the map edge
+        if (rc.getLocation().x < 3) loc = loc.add(Direction.EAST);
+        if (rc.getLocation().x > Constants.mapWidth - 4) loc = loc.add(Direction.WEST);
+        if (rc.getLocation().y < 3) loc = loc.add(Direction.NORTH);
+        if (rc.getLocation().y > Constants.mapHeight - 4) loc = loc.add(Direction.SOUTH);
+        moveToward(rc, loc);
         // try to run away from allies
         RobotInfo[] allies = rc.senseNearbyRobots(-1, rc.getTeam());
         if (allies.length > 0) {
-            MapLocation loc = rc.getLocation();
             for (RobotInfo ally : allies) {
                 Direction dir = rc.getLocation().directionTo(ally.location).opposite();
                 loc = loc.add(dir);
             }
             moveToward(rc, loc);
-        } else {
-            // move randomly
-            Direction[] dirs = Direction.allDirections();
-            Direction dir = dirs[rng.nextInt(dirs.length)];
-            if (rc.canMove(dir)) {
-                rc.move(dir);
-            }
+        }
+        // move randomly
+        Direction[] dirs = Direction.allDirections();
+        Direction dir = dirs[rng.nextInt(dirs.length)];
+        if (rc.canMove(dir)) {
+            rc.move(dir);
         }
     }
 
     public static void moveToward(RobotController rc, MapLocation target) throws GameActionException {
         // temporary
         Direction dir = rc.getLocation().directionTo(target);
-        if (rc.canMove(dir)) {
-            rc.move(dir);
-        }
+        MapLocation loc = rc.getLocation().add(dir);
+        if (rc.canFill(loc)) rc.fill(loc);
+        if (rc.canMove(dir)) rc.move(dir);
     }
 
     public static MapLocation[] avoid(RobotController rc, MapLocation center, int distanceSquared) throws GameActionException {
