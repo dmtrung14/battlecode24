@@ -38,6 +38,7 @@ public strictfp class RobotPlayer {
 //                    rc.setIndicatorString(String.format("myID: %s", Constants.myID));
                 }
 
+
             } catch (Exception e) {
                 System.out.println("Exception");
                 e.printStackTrace();

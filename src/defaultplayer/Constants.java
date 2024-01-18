@@ -10,7 +10,7 @@ public class Constants {
     public static MapLocation[] FLAGS = new MapLocation[3];
 
     public static MapLocation[] SPAWN_ZONES;
-    public static final int EXPLORE_ROUNDS = 150;
+    public static final int EXPLORE_ROUNDS = 120;
 
     public static final int FLAG_RUSH_ROUNDS = 60;
     public static int myID = 0;

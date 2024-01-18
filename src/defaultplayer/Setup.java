@@ -98,7 +98,14 @@ public class Setup {
         }
     }
 
-    public void buildAroundFlags() {
+    public void buildAroundFlags() throws GameActionException {
+        MapLocation flagLoc = rc.getLocation();
+        MapInfo[] around_flag = rc.senseNearbyMapInfos(flagLoc, 1);
+        for (MapInfo a : around_flag) {
+            if(a.isPassable() && !a.getMapLocation().equals(flagLoc)){
+                builder.waitAndBuildTrap(TrapType.WATER, a.getMapLocation());
+            }
+        }
 
     }
 
@@ -118,10 +125,15 @@ public class Setup {
                 if (rc.getRoundNum() <= Constants.FLAG_RUSH_ROUNDS) {
                     moveToGoal();
                 }
+                for (int i = 0; i < 3; i++){
+                    Constants.FLAGS[i] = Comms.getFlagLocation(rc, rc.getTeam(), i);
+                }
+                buildAroundFlags();
+
             } else if (isExplorer()) {
-                Pathfind.explore(rc);
+                if (rc.getRoundNum() <= Constants.EXPLORE_ROUNDS) Pathfind.explore(rc);
             }
-            // TODO: do something after the setup phase
+
 
         } catch (GameActionException e) {
             e.printStackTrace();
