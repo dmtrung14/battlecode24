@@ -21,8 +21,8 @@ public class MainPhase {
 
     public void tryBuyGlobal() throws GameActionException {
         if (rc.canBuyGlobal(GlobalUpgrade.ATTACK)) rc.buyGlobal(GlobalUpgrade.ATTACK);
-        else if(rc.canBuyGlobal(GlobalUpgrade.HEALING)) rc.buyGlobal(GlobalUpgrade.HEALING);
-        else if(rc.canBuyGlobal(GlobalUpgrade.CAPTURING)) rc.buyGlobal(GlobalUpgrade.CAPTURING);
+        else if (rc.canBuyGlobal(GlobalUpgrade.HEALING)) rc.buyGlobal(GlobalUpgrade.HEALING);
+        else if (rc.canBuyGlobal(GlobalUpgrade.CAPTURING)) rc.buyGlobal(GlobalUpgrade.CAPTURING);
     }
 
 
@@ -64,11 +64,11 @@ public class MainPhase {
     public void tryRebound(MapLocation center, int depth) throws GameActionException {
         if (!rc.isSpawned()) return;
         Queue<Integer> pastDistance = new LinkedList<Integer>();
-        for (int i = 0; i < depth; i ++) pastDistance.add(rc.getLocation().distanceSquaredTo(center));
+        for (int i = 0; i < depth; i++) pastDistance.add(rc.getLocation().distanceSquaredTo(center));
         Direction lastDir = Direction.CENTER;
         MapLocation[] nextLocation = Pathfind.attract(rc, center, pastDistance.remove());
         int counter = 0;
-        int avg = (Constants.mapHeight + Constants.mapWidth)/2;
+        int avg = (Constants.mapHeight + Constants.mapWidth) / 2;
         while ((nextLocation.length > 0) && counter <= avg) {
             pastDistance.add(rc.getLocation().distanceSquaredTo(center));
             if (nextLocation.length > 0) {
@@ -93,8 +93,7 @@ public class MainPhase {
                 else if (rc.canMove(lastDir.rotateLeft())) {
                     rc.move(lastDir.rotateLeft());
                     lastDir = lastDir.rotateLeft();
-                }
-                else if (rc.canMove(lastDir.rotateRight())) {
+                } else if (rc.canMove(lastDir.rotateRight())) {
                     rc.move(lastDir.rotateRight());
                     lastDir = lastDir.rotateRight();
                 }
@@ -103,22 +102,21 @@ public class MainPhase {
         }
     }
 
-
     public void run() throws GameActionException {
         if (isBuilder()) {
             if (!rc.isSpawned()) {
                 setup.spawn();
-                tryRebound(Constants.FLAGS[Constants.myID -1], 2);
+                tryRebound(Constants.FLAGS[Constants.myID - 1], 2);
             } else {
                 if (isFlagDanger(rc) != Constants.IS_MY_FLAG_DANGER) {
-                    Comms.setFlagDanger(rc, Constants.myID -1, isFlagDanger(rc));
+                    Comms.setFlagDanger(rc, Constants.myID - 1, isFlagDanger(rc));
                     Constants.IS_MY_FLAG_DANGER = isFlagDanger(rc);
                 }
             }
         } else if (isExplorer()) {
             if (!rc.isSpawned()) {
                 setup.spawn();
-                for (int i = 0; i <= 5; i ++ ){
+                for (int i = 0; i <= 5; i++) {
                     Pathfind.explore(rc);
                     Clock.yield();
                 }
@@ -130,8 +128,11 @@ public class MainPhase {
                 tryAttack();
                 tryHeal();
                 // TODO : Configure this tryRebound in main phase .run();
-                tryRebound(new MapLocation(Constants.mapWidth/2, Constants.mapHeight/2), 2);
-                if (rc.isSpawned()) Pathfind.explore(rc);
+                tryRebound(new MapLocation(Constants.mapWidth / 2, Constants.mapHeight / 2), 2);
+                if (rc.isSpawned()) {
+                    Pathfind.explore(rc);
+                    Comms.reportZoneInfo(rc);
+                }
             }
         }
 

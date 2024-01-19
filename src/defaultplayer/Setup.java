@@ -178,8 +178,10 @@ public class Setup {
                 digLand();
 
             } else if (isExplorer()) {
-                if (rc.getRoundNum() <= Constants.EXPLORE_ROUNDS) Pathfind.explore(rc);
-                else {
+                if (rc.getRoundNum() <= Constants.EXPLORE_ROUNDS) {
+                    Pathfind.explore(rc);
+                    Comms.reportZoneInfo(rc);
+                } else {
                     moveToCenter();
                 }
             }
