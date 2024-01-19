@@ -119,10 +119,10 @@ public class Comms {
     }
 
     private static int computeBitIndex(MapLocation loc) {
-        int zoneWidth = Constants.mapWidth / 10;
-        int zoneHeight = Constants.mapHeight / 10;
-        int zoneX = loc.x / zoneWidth;
-        int zoneY = loc.y / zoneHeight;
+        double zoneWidth = Constants.mapWidth * 0.1;
+        double zoneHeight = Constants.mapHeight * 0.1;
+        int zoneX = (int) Math.floor(loc.x / zoneWidth);
+        int zoneY = (int) Math.floor(loc.y / zoneHeight);
         int zoneId = zoneX * 10 + zoneY;
         return ZONE_START_INDEX * 16 + zoneId * 9;
     }
