@@ -39,15 +39,30 @@ public class Pathfind {
             rc.move(dir);
         }
     }
-
-
-
     public static void moveToward(RobotController rc, MapLocation target) throws GameActionException {
         // temporary
         Direction dir = rc.getLocation().directionTo(target);
         MapLocation loc = rc.getLocation().add(dir);
         if (rc.canFill(loc)) rc.fill(loc);
         if (rc.canMove(dir)) rc.move(dir);
+    }
+
+    public static void moveTowardMain(RobotController rc, MapLocation target, boolean fill) throws GameActionException {
+        Direction dir = rc.getLocation().directionTo(target);
+        MapLocation loc = rc.getLocation().add(dir);
+        MapInfo locInfo = rc.senseMapInfo(loc);
+
+        if(fill && locInfo.getTeamTerritory() == rc.getTeam().opponent()) rc.fill(rc.getLocation().add(dir));
+
+        if(rc.canMove(dir)) rc.move(dir);
+        else if(rc.canMove(dir.rotateLeft())) rc.move(dir.rotateLeft());
+        else if(rc.canMove(dir.rotateRight())) rc.move(dir.rotateRight());
+        else if (rc.canMove(dir.rotateLeft().rotateLeft())) rc.move(dir.rotateLeft().rotateLeft());
+        else if (rc.canMove(dir.rotateRight().rotateRight())) rc.move(dir.rotateRight().rotateRight());
+        else {
+            Direction randDir = Constants.DIRECTIONS[Constants.RANDOM.nextInt(8)];
+            if(rc.canMove(randDir)) rc.move(randDir);
+        }
     }
 
     public static MapLocation[] avoid(RobotController rc, MapLocation center, int distanceSquared) throws GameActionException {
@@ -118,25 +133,7 @@ public class Pathfind {
     }
     // execute these algorithms within vision range
 
-    public static void BFS(RobotController rc, MapLocation start, MapLocation end) throws GameActionException {
-        ;
-    }
 
-    public static void DFS(RobotController rc, MapLocation start, MapLocation end) throws GameActionException {
-
-    }
-
-    public static void AStar(RobotController rc, MapLocation start, MapLocation end) throws GameActionException {
-
-    }
-
-    public static void Dijkstra(RobotController rc, MapLocation start, MapLocation end) throws GameActionException {
-
-    }
-
-    public static void Bellman_Ford(RobotController rc, MapLocation start, MapLocation end) throws GameActionException {
-
-    }
         
 
 }

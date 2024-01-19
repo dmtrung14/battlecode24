@@ -33,7 +33,7 @@ public class Setup {
             } else if (contains(Constants.BUILDERS, Constants.myID)) {
                 rc.spawn(Constants.SPAWN_ZONES[9 * (Constants.myID - 1) + 4]); //
             } else {
-                int randomZone = rand.nextInt(3);
+                int randomZone = rand.nextInt(27);
                 for (int i = 27; i >= 1; i--) {
                     if (rc.canSpawn(Constants.SPAWN_ZONES[(randomZone + i) % 27])) {
                         rc.spawn(Constants.SPAWN_ZONES[(randomZone + i) % 27]);
@@ -86,7 +86,6 @@ public class Setup {
     }
 
     public void moveToCenter() throws GameActionException {
-        if (Constants.MOBILIZED) return;
         MapLocation center = new MapLocation(Constants.mapWidth / 2, Constants.mapHeight / 2);
         Queue<Integer> pastDistance = new LinkedList<Integer>();
         pastDistance.add(rc.getLocation().distanceSquaredTo(center));
@@ -121,7 +120,6 @@ public class Setup {
                 }
             }
         }
-        Constants.MOBILIZED = true;
     }
     public void buildAroundFlags() throws GameActionException {
         MapLocation flagLoc = rc.getLocation();

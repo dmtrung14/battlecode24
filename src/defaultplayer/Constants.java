@@ -16,6 +16,7 @@ public class Constants {
     public static int myID = 0;
 
 
+
     public static final Direction[] DIRECTIONS = {
             Direction.NORTH,
             Direction.NORTHEAST,
@@ -30,4 +31,7 @@ public class Constants {
     public static Random RANDOM;
     public static boolean HAS_MOVED_FLAG = false;
     public static boolean MOBILIZED = false;
+
+    public static boolean IS_MY_FLAG_DANGER = false;
+
 }

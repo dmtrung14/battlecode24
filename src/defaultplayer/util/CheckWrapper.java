@@ -3,6 +3,8 @@ package defaultplayer.util;
 import battlecode.common.*;
 import defaultplayer.Constants;
 
+import java.awt.*;
+
 public class CheckWrapper {
     public static <T> boolean contains(T[] array, T value){
         for (T key : array) {
@@ -26,5 +28,9 @@ public class CheckWrapper {
             }
         }
         return false;
+    }
+
+    public static boolean isFlagDanger(RobotController rc) throws GameActionException {
+        return rc.senseNearbyRobots(-1, rc.getTeam().opponent()).length > 0;
     }
 }
