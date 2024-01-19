@@ -43,6 +43,16 @@ public class Builder {
         rc.build(type, loc);
     }
 
+    public void waitAndBuildTrapTurn(TrapType type, MapLocation loc, int turn) throws GameActionException {
+        for (int i = 0; i < turn; i ++ ){
+            if (!rc.isSpawned()) return;
+            if (rc.canBuild(type, loc)) {
+                rc.build(type, loc);
+                return;
+            }
+            Clock.yield();
+        }
+    }
     public void waitAndDig(MapLocation loc) throws GameActionException {
         while (!rc.canDig(loc)) {
             MapInfo locInfo = rc.senseMapInfo(loc);

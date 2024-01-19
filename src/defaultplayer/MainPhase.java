@@ -11,10 +11,12 @@ import static defaultplayer.util.CheckWrapper.*;
 public class MainPhase {
     private final RobotController rc;
     private final Setup setup;
+    private final Builder builder;
 
     public MainPhase(RobotController rc) {
         this.rc = rc;
         this.setup = new Setup(rc);
+        this.builder = new Builder(rc);
     }
 
     public void tryBuyGlobal() throws GameActionException {
@@ -22,6 +24,7 @@ public class MainPhase {
         else if(rc.canBuyGlobal(GlobalUpgrade.HEALING)) rc.buyGlobal(GlobalUpgrade.HEALING);
         else if(rc.canBuyGlobal(GlobalUpgrade.CAPTURING)) rc.buyGlobal(GlobalUpgrade.CAPTURING);
     }
+
 
     public void tryAttack() throws GameActionException {
         RobotInfo[] nearbyEnemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
@@ -33,6 +36,17 @@ public class MainPhase {
             }
         }
         for (RobotInfo robot : nearbyEnemies) {
+            MapLocation current = rc.getLocation();
+            if (current.distanceSquaredTo(robot.getLocation()) > 9) {
+                builder.waitAndBuildTrapTurn(TrapType.STUN, current, 2);
+                break;
+            } else if (current.distanceSquaredTo(robot.getLocation()) > 4) {
+                builder.waitAndBuildTrapTurn(TrapType.WATER, current, 2);
+                break;
+            } else if (current.distanceSquaredTo(robot.getLocation()) > 2) {
+                builder.waitAndBuildTrapTurn(TrapType.EXPLOSIVE, current, 2);
+                break;
+            }
             Pathfind.moveTowardMain(rc, robot.getLocation(), false);
             if (rc.canAttack(robot.getLocation())) {
                 rc.attack(robot.getLocation());
