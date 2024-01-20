@@ -2,12 +2,7 @@ package defaultplayer;
 
 import battlecode.common.*;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
 import java.util.Random;
-import java.util.Set;
 
 /**
  * RobotPlayer is the class that describes your main robot strategy.
@@ -29,6 +24,8 @@ public strictfp class RobotPlayer {
         Constants.mapWidth = rc.getMapWidth();
         Constants.mapHeight = rc.getMapHeight();
         Constants.SPAWN_ZONES = rc.getAllySpawnLocations();
+        Constants.myID = Comms.incrementAndGetId(rc);
+        Constants.RANDOM = new Random(Constants.myID);
         Setup setup = new Setup(rc);
         MainPhase main = new MainPhase(rc);
         
