@@ -1,12 +1,12 @@
 package defaultplayer;
 
-import java.awt.*;
-import java.util.*;
-
 import battlecode.common.*;
 import com.sun.tools.internal.jxc.ap.Const;
+import scala.collection.immutable.Stream;
 
+import java.util.*;
 import static defaultplayer.util.CheckWrapper.*;
+import static defaultplayer.util.Optimizer.*;
 
 public class MainPhase {
     private final RobotController rc;
@@ -28,26 +28,36 @@ public class MainPhase {
 
     public void tryAttack() throws GameActionException {
         RobotInfo[] nearbyEnemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
+        MapLocation current = rc.getLocation();
+        Arrays.sort(nearbyEnemies, new Comparator<RobotInfo>() {
+            @Override
+            public int compare(RobotInfo o1, RobotInfo o2) {
+                return Integer.compare(o1.getLocation().distanceSquaredTo(current), o2.getLocation().distanceSquaredTo(current));
+            }
+        });
         for (RobotInfo robot : nearbyEnemies) {
             if (robot.hasFlag()) {
-                Pathfind.moveTowardMain(rc, robot.getLocation(), false);
+                Pathfind.moveToward(rc, robot.getLocation(), false);
                 if (rc.canAttack(robot.getLocation()))
                     rc.attack(robot.getLocation());
             }
         }
         for (RobotInfo robot : nearbyEnemies) {
-            MapLocation current = rc.getLocation();
-            if (current.distanceSquaredTo(robot.getLocation()) > 9) {
-                builder.waitAndBuildTrapTurn(TrapType.STUN, current, 2);
+            if (current.distanceSquaredTo(robot.getLocation()) > 10) {
+                tryHeal();
                 break;
-            } else if (current.distanceSquaredTo(robot.getLocation()) > 4) {
+            } else if (current.distanceSquaredTo(robot.getLocation()) > 8) {
+                tryHeal();
                 builder.waitAndBuildTrapTurn(TrapType.WATER, current, 2);
                 break;
-            } else if (current.distanceSquaredTo(robot.getLocation()) > 2) {
+            } else if (current.distanceSquaredTo(robot.getLocation()) > 6) {
+                tryHeal();
                 builder.waitAndBuildTrapTurn(TrapType.EXPLOSIVE, current, 2);
                 break;
+            } else if (current.distanceSquaredTo(robot.getLocation()) > 4) {
+                builder.waitAndBuildTrapTurn(TrapType.STUN, current, 2);
             }
-            Pathfind.moveTowardMain(rc, robot.getLocation(), false);
+            Pathfind.moveToward(rc, robot.getLocation(), false);
             if (rc.canAttack(robot.getLocation())) {
                 rc.attack(robot.getLocation());
             }
@@ -55,86 +65,65 @@ public class MainPhase {
     }
 
     public void tryHeal() throws GameActionException {
+        if (!rc.isSpawned()) return;
         for (RobotInfo robot : rc.senseNearbyRobots(-1, rc.getTeam())) {
             if (rc.canHeal(robot.getLocation()))
                 rc.heal(robot.getLocation());
         }
     }
 
-    public void tryRebound(MapLocation center, int depth) throws GameActionException {
+    public void tryUpdateInfo() throws GameActionException {
         if (!rc.isSpawned()) return;
-        Queue<Integer> pastDistance = new LinkedList<Integer>();
-        for (int i = 0; i < depth; i++) pastDistance.add(rc.getLocation().distanceSquaredTo(center));
-        Direction lastDir = Direction.CENTER;
-        MapLocation[] nextLocation = Pathfind.attract(rc, center, pastDistance.remove());
-        int counter = 0;
-        int avg = (Constants.mapHeight + Constants.mapWidth) / 2;
-        while ((nextLocation.length > 0) && counter <= avg) {
-            pastDistance.add(rc.getLocation().distanceSquaredTo(center));
-            if (nextLocation.length > 0) {
-                for (int i = 0; i < nextLocation.length; i++) {
-                    if (!rc.isSpawned()) return;
-                    Direction dir = rc.getLocation().directionTo(nextLocation[i]);
-                    if (rc.canMove(dir)) {
-                        rc.move(dir);
-                        lastDir = dir;
-                        break;
-                    }
-                    if (i == (nextLocation.length - 1) && counter <= avg) {
-                        i = -1;
-                        counter += 1;
-                        Clock.yield();
-                    }
-                }
-                if (!rc.isSpawned()) return;
-                nextLocation = Pathfind.attract(rc, center, pastDistance.remove());
-            } else {
-                if (rc.canMove(lastDir)) rc.move(lastDir);
-                else if (rc.canMove(lastDir.rotateLeft())) {
-                    rc.move(lastDir.rotateLeft());
-                    lastDir = lastDir.rotateLeft();
-                } else if (rc.canMove(lastDir.rotateRight())) {
-                    rc.move(lastDir.rotateRight());
-                    lastDir = lastDir.rotateRight();
-                }
-            }
-            counter += 1;
-        }
+        Constants.ENEMY_FLAGS_PING = rc.senseBroadcastFlagLocations();
+
     }
 
+    public void tryCaptureFlag() throws GameActionException {
+        if (!rc.isSpawned()) return;
+        if (!rc.hasFlag()) {
+            FlagInfo[] flags = rc.senseNearbyFlags(-1, rc.getTeam().opponent());
+            if (flags.length > 0 && !flags[0].isPickedUp()){
+                Pathfind.moveToward(rc, flags[0].getLocation(), true);
+                if (rc.canPickupFlag(flags[0].getLocation())) rc.pickupFlag(flags[0].getLocation());
+            } else if (flags.length > 0  && flags[0].isPickedUp()) {
+                Pathfind.moveToward(rc, nearestSpawnZone(rc), true);
+            }
+        }
+        while (rc.hasFlag()) {
+            Pathfind.moveToward(rc, nearestSpawnZone(rc), true);
+        }
+    }
     public void run() throws GameActionException {
         if (isBuilder()) {
             if (!rc.isSpawned()) {
                 setup.spawn();
-                tryRebound(Constants.FLAGS[Constants.myID - 1], 2);
+                Pathfind.moveToward(rc, Constants.ALLY_FLAGS[Constants.myID - 1], true);
             } else {
+                if (isFlagDanger(rc)) tryAttack();
                 if (isFlagDanger(rc) != Constants.IS_MY_FLAG_DANGER) {
                     Comms.setFlagDanger(rc, Constants.myID - 1, isFlagDanger(rc));
                     Constants.IS_MY_FLAG_DANGER = isFlagDanger(rc);
                 }
             }
         } else if (isExplorer()) {
-            if (!rc.isSpawned()) {
-                setup.spawn();
-                for (int i = 0; i <= 5; i++) {
-                    Pathfind.explore(rc);
-                    Clock.yield();
-                }
-            } else {
-                tryBuyGlobal();
+            if (!rc.isSpawned()) setup.spawn();
+            tryBuyGlobal();
+            tryUpdateInfo();
 
-                // TODO : Configure the logic for the order of attack, movement when flag is in danger.
+            // TODO : Configure the logic for the order of attack, movement when flag is in danger.
+            tryAttack();
+            tryCaptureFlag();
+            if (!rc.isSpawned()) return;
+            tryHeal();
+            // TODO : Configure this tryRebound in main phase .run();
 
-                tryAttack();
-                tryHeal();
-                // TODO : Configure this tryRebound in main phase .run();
-                tryRebound(new MapLocation(Constants.mapWidth / 2, Constants.mapHeight / 2), 2);
-                if (rc.isSpawned()) {
-                    Pathfind.explore(rc);
-                    Comms.reportZoneInfo(rc);
-                }
-            }
+            if (nearestFlag(rc) != null) Pathfind.moveToward(rc, nearestFlag(rc), true);
+            else Pathfind.moveToward(rc, new MapLocation(Constants.mapWidth/2, Constants.mapHeight/2), true);
+            if (!rc.isSpawned()) return;
+
+            Pathfind.explore(rc);
+
+            Comms.reportZoneInfo(rc);
         }
-
     }
 }

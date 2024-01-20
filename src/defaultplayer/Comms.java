@@ -4,6 +4,8 @@ import battlecode.common.*;
 
 import java.util.ArrayList;
 
+import static defaultplayer.util.ZoneInfo.*;
+
 public class Comms {
     private static final int BOT_ID_INDEX = 0;
     private static final int SYM_INDEX = 0;
@@ -21,7 +23,7 @@ public class Comms {
         int value = rc.readSharedArray(BOT_ID_INDEX);
         int newValue = value + (1 << 10);
         rc.writeSharedArray(BOT_ID_INDEX, newValue);
-        return value >> 10;
+        return value >>> 10;
     }
 
     private static int symmetryId(Symmetry sym) {
@@ -80,8 +82,8 @@ public class Comms {
     public static MapLocation getFlagLocation(RobotController rc, Team team, int flag) throws GameActionException {
         int index = FLAG_LOC_START_INDEX + (rc.getTeam() == team ? 0 : 3) + flag;
         int value = rc.readSharedArray(index);
-        int x = value >> 10;
-        int y = (value >> 4) & 0b111111;
+        int x = value >>> 10;
+        int y = (value >>> 4) & 0b111111;
         return new MapLocation(x, y);
     }
 
@@ -98,21 +100,21 @@ public class Comms {
     }
 
     private static void setBits32(RobotController rc, int arrayIndex, int value) throws GameActionException {
-        rc.writeSharedArray(arrayIndex, value >> 16);
-        rc.writeSharedArray(arrayIndex + 1, value % (1 << 16));
+        rc.writeSharedArray(arrayIndex, value >>> 16);
+        rc.writeSharedArray(arrayIndex + 1, value & ((1 << 16) - 1));
     }
 
     private static int getBits9(RobotController rc, int bitIndex) throws GameActionException {
         int arrayIndex = bitIndex / 16;
         int bits = getBits32(rc, arrayIndex);
-        int shift = 32 - 9 - (bitIndex % 16);
-        return (bits >> shift) & 0b111111111;
+        int shift = 32 - 9 - (bitIndex & ((1 << 16) - 1));
+        return (bits >>> shift) & 0b111111111;
     }
 
     private static void setBits9(RobotController rc, int bitIndex, int value) throws GameActionException {
         int arrayIndex = bitIndex / 16;
         int bits = getBits32(rc, arrayIndex);
-        int shift = 32 - 9 - (bitIndex % 16);
+        int shift = 32 - 9 - (bitIndex & ((1 << 16) - 1));
         int mask = 0b111111111 << shift;
         int newBits = (bits & ~mask) | (value << shift);
         setBits32(rc, arrayIndex, newBits);
@@ -123,14 +125,14 @@ public class Comms {
         double zoneHeight = Constants.mapHeight * 0.1;
         int zoneX = (int) Math.floor(loc.x / zoneWidth);
         int zoneY = (int) Math.floor(loc.y / zoneHeight);
-        int zoneId = zoneX * 10 + zoneY;
+        int zoneId = getZoneId(loc);
         return ZONE_START_INDEX * 16 + zoneId * 9;
     }
 
     private static int getZoneBits(RobotController rc, MapLocation loc, int shift, int numBits) throws GameActionException {
         int bitIndex = computeBitIndex(loc);
         int bits = getBits9(rc, bitIndex);
-        return (bits >> shift) & ((1 << numBits) - 1);
+        return (bits >>> shift) & ((1 << numBits) - 1);
     }
 
     private static void setZoneBits(RobotController rc, MapLocation loc, int shift, int numBits, int value) throws GameActionException {
@@ -207,5 +209,9 @@ public class Comms {
         setZoneRobots(rc, loc, rc.getTeam(), numAllies);
         setZoneRobots(rc, loc, rc.getTeam().opponent(), numEnemies);
         setZoneTimestamp(rc, loc, rc.getRoundNum());
+    }
+
+    public static void fetchZoneInfo(RobotController rc, int id) throws GameActionException {
+
     }
 }
