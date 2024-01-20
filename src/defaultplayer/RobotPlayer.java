@@ -38,6 +38,7 @@ public strictfp class RobotPlayer {
                     setup.run();
 //                    rc.setIndicatorString(String.format("myID: %s", Constants.myID));
                 } else {
+                    setup.backFlagLoc();
                     main.run();
                 }
 

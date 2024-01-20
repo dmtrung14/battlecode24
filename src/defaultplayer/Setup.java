@@ -3,6 +3,7 @@ package defaultplayer;
 import battlecode.common.*;
 import scala.collection.immutable.Stream;
 
+import java.awt.peer.CanvasPeer;
 import java.util.*;
 
 import static defaultplayer.util.CheckWrapper.*;
@@ -148,7 +149,7 @@ public class Setup {
                 }
             }
         }
-        if (rc.getLocation().distanceSquaredTo(Our_Flag[Constants.myID]) > 2) {
+        if (rc.getLocation().distanceSquaredTo(Our_Flag[Constants.myID]) > 20) {
             dir = rc.getLocation().directionTo(Our_Flag[Constants.myID]);
             if (rc.canMove(dir)) {
                 rc.move(dir);
@@ -159,7 +160,21 @@ public class Setup {
             }
         }
     }
-
+    public void backFlagLoc() throws GameActionException {
+        MapLocation FlagLoc = Our_Flag[Constants.myID];
+        while(rc.getLocation() != FlagLoc){
+            Direction dir = rc.getLocation().directionTo(FlagLoc);
+            if(rc.canMove(dir)){
+                rc.move(dir);
+            }
+            else if(rc.canMove(dir.rotateLeft())){
+                rc.move(dir.rotateLeft());
+            }
+            else{
+                rc.move(dir.rotateRight());
+            }
+        }
+    }
     public void run() {
         try {
             if (!rc.isSpawned()) {
