@@ -52,7 +52,7 @@ public class Pathfind {
         MapLocation loc = rc.getLocation().add(dir);
         MapInfo locInfo = rc.senseMapInfo(loc);
 
-        if(fill && locInfo.getTeamTerritory() == rc.getTeam().opponent()) rc.fill(rc.getLocation().add(dir));
+        if(fill && locInfo.getTeamTerritory() == rc.getTeam().opponent() && rc.canFill(loc)) rc.fill(loc);
 
         if(rc.canMove(dir)) rc.move(dir);
         else if(rc.canMove(dir.rotateLeft())) rc.move(dir.rotateLeft());
@@ -133,6 +133,28 @@ public class Pathfind {
     }
     // execute these algorithms within vision range
 
+    public static MapLocation nearestFlag(RobotController rc) {
+        if (!rc.isSpawned()) return null;
+        int minDistance = Integer.MAX_VALUE;
+        MapLocation nearest = null;
+        MapLocation current = rc.getLocation();
+        // TODO: implement checks when enemy_flags are pinpointed
+//        for (MapLocation flag : Constants.ENEMY_FLAGS) {
+//            if (current.distanceSquaredTo(flag) < minDistance) {
+//                nearest = flag;
+//                minDistance = current.distanceSquaredTo(flag);
+//            }
+//        }
+        if (nearest == null) {
+            for (MapLocation ping : Constants.ENEMY_FLAGS_PING) {
+                if (current.distanceSquaredTo(ping) < minDistance) {
+                    nearest = ping;
+                    minDistance = current.distanceSquaredTo(ping);
+                }
+            }
+        }
+        return nearest;
+    }
 
         
 

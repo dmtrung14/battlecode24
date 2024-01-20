@@ -5,6 +5,7 @@ import java.util.*;
 
 import battlecode.common.*;
 import com.sun.tools.internal.jxc.ap.Const;
+import scala.collection.immutable.Stream;
 
 import static defaultplayer.util.CheckWrapper.*;
 
@@ -55,6 +56,7 @@ public class MainPhase {
     }
 
     public void tryHeal() throws GameActionException {
+        if (!rc.isSpawned()) return;
         for (RobotInfo robot : rc.senseNearbyRobots(-1, rc.getTeam())) {
             if (rc.canHeal(robot.getLocation()))
                 rc.heal(robot.getLocation());
@@ -103,12 +105,28 @@ public class MainPhase {
         }
     }
 
+    public void tryUpdateInfo() throws GameActionException {
+        if (!rc.isSpawned()) return;
+        Constants.ENEMY_FLAGS_PING = rc.senseBroadcastFlagLocations();
 
+    }
+
+    public void tryGetFlag() throws GameActionException {
+        if (!rc.isSpawned()) return;
+        FlagInfo[] flags = rc.senseNearbyFlags(-1, rc.getTeam().opponent());
+        for (FlagInfo flag : flags) {
+            if (!flag.isPickedUp()) Pathfind.moveTowardMain(rc, flag.getLocation(), true);
+            if (rc.canPickupFlag(flag.getLocation())) rc.pickupFlag(flag.getLocation());
+            Pathfind.moveTowardMain(rc, Constants.SPAWN_ZONES[0], true);
+
+        }
+
+    }
     public void run() throws GameActionException {
         if (isBuilder()) {
             if (!rc.isSpawned()) {
                 setup.spawn();
-                tryRebound(Constants.FLAGS[Constants.myID -1], 2);
+                tryRebound(Constants.ALLY_FLAGS[Constants.myID -1], 2);
             } else {
                 if (isFlagDanger(rc) != Constants.IS_MY_FLAG_DANGER) {
                     Comms.setFlagDanger(rc, Constants.myID -1, isFlagDanger(rc));
@@ -124,13 +142,15 @@ public class MainPhase {
                 }
             } else {
                 tryBuyGlobal();
+                tryUpdateInfo();
 
                 // TODO : Configure the logic for the order of attack, movement when flag is in danger.
 
                 tryAttack();
                 tryHeal();
                 // TODO : Configure this tryRebound in main phase .run();
-                tryRebound(new MapLocation(Constants.mapWidth/2, Constants.mapHeight/2), 2);
+                tryGetFlag();
+                tryRebound(Pathfind.nearestFlag(rc), 2);
                 if (rc.isSpawned()) Pathfind.explore(rc);
             }
         }

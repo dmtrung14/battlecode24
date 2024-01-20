@@ -154,7 +154,7 @@ public class Setup {
                 rc.move(dir);
             } else if (rc.canMove(dir.rotateRight())) {
                 rc.move(dir.rotateRight());
-            } else {
+            } else if (rc.canMove(dir.rotateLeft())) {
                 rc.move(dir.rotateLeft());
             }
         }
@@ -170,7 +170,7 @@ public class Setup {
                     moveToGoal();
                 }
                 for (int i = 0; i < 3; i++) {
-                    Constants.FLAGS[i] = Comms.getFlagLocation(rc, rc.getTeam(), i);
+                    Constants.ALLY_FLAGS[i] = Comms.getFlagLocation(rc, rc.getTeam(), i);
                 }
                 if (!AfterbuildTrap) {
                     buildAroundFlags();
