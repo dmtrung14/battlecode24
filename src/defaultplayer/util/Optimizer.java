@@ -29,7 +29,6 @@ public class Optimizer {
         int minDistance = Integer.MAX_VALUE;
         MapLocation nearest = null;
         MapLocation current = rc.getLocation();
-        System.out.println(Arrays.toString(ENEMY_FLAGS_PING));
         for (MapLocation ping : ENEMY_FLAGS_PING) {
             if (ping.x != NULL_COOR && current.distanceSquaredTo(ping) < minDistance) {
                 nearest = ping;

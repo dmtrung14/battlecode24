@@ -76,6 +76,7 @@ public class MainPhase {
 
     public void tryUpdateInfo() throws GameActionException {
         if (!rc.isSpawned()) return;
+        Comms.getFlagID(rc);
         for (int i = 0;  i < 3; i ++ ) {
             MapLocation opponentFlag = Comms.getFlagLocation(rc, rc.getTeam().opponent(), 2 - i);
             MapLocation[] flagPings = rc.senseBroadcastFlagLocations();
@@ -85,9 +86,12 @@ public class MainPhase {
             } else {
                 ENEMY_FLAGS_PING[i] = new MapLocation(NULL_COOR, NULL_COOR);
             }
-            if (opponentFlag != null && 2 - i> KNOWN_ENEMY_FLAGS) {
-                KNOWN_ENEMY_FLAGS = 2 - i;
-                ENEMY_FLAGS[2 - i] = opponentFlag;
+        }
+        for (int i = 0; i < 3; i ++ ) {
+            MapLocation opponentFlag = Comms.getFlagLocation(rc, rc.getTeam().opponent(), i);
+            if (opponentFlag != null) {
+                KNOWN_ENEMY_FLAGS = i;
+                ENEMY_FLAGS[i] = opponentFlag;
             }
         }
     }
@@ -97,8 +101,10 @@ public class MainPhase {
         if (!rc.hasFlag()) {
             FlagInfo[] flags = rc.senseNearbyFlags(-1, rc.getTeam().opponent());
             if (flags.length > 0 && !flags[0].isPickedUp()){
-                if (!contains(ENEMY_FLAGS, flags[0].getLocation())) {
+                if (!contains(ENEMY_FLAGS_ID, flags[0].getID())) {
                     KNOWN_ENEMY_FLAGS += 1;
+                    ENEMY_FLAGS_ID[KNOWN_ENEMY_FLAGS] = flags[0].getID();
+                    Comms.setFlagID(rc, flags[0].getID());
                     ENEMY_FLAGS[KNOWN_ENEMY_FLAGS] = flags[0].getLocation();
                     Comms.setFlagLocation(rc, rc.getTeam().opponent(), KNOWN_ENEMY_FLAGS, flags[0].getLocation());
                 }

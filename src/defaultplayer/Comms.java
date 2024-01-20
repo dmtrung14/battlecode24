@@ -1,6 +1,7 @@
 package defaultplayer;
 
 import battlecode.common.*;
+import scala.collection.immutable.Stream;
 
 import java.util.ArrayList;
 
@@ -214,5 +215,13 @@ public class Comms {
 
     public static void fetchZoneInfo(RobotController rc, int id) throws GameActionException {
 
+    }
+
+    public static void getFlagID(RobotController rc) throws GameActionException {
+        Constants.ENEMY_FLAGS_ID = new Integer[]{rc.readSharedArray(61), rc.readSharedArray(62), rc.readSharedArray(63)};
+    }
+
+    public static void setFlagID(RobotController rc, int id) throws GameActionException {
+        rc.writeSharedArray(61 + Constants.KNOWN_ENEMY_FLAGS, id);
     }
 }

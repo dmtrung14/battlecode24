@@ -22,6 +22,8 @@ public class Constants {
     public static MapLocation[] ENEMY_FLAGS = new MapLocation[3];
     public static MapLocation[] ENEMY_FLAGS_PING = new MapLocation[3];
 
+    public static Integer[] ENEMY_FLAGS_ID = new Integer[3];
+
     public static final Direction[] DIRECTIONS = {
             Direction.NORTH,
             Direction.NORTHEAST,
