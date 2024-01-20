@@ -65,59 +65,11 @@ public class Builder {
 
     }
 
-    public void buildCornerDefense(MapLocation loc) throws GameActionException {
-        Direction left = Direction.NORTH;
-        Direction right = Direction.EAST;
-        Direction lr = Direction.SOUTHEAST;
-        Direction rl = Direction.NORTHEAST;
-        int rotation;
-        // set directions in different location cases
-        if (loc.equals(new MapLocation(0,0))) {
-            rotation = 0;
-        } else if (loc.equals(new MapLocation(0, rc.getMapHeight()-1))){
-            rotation = 2;
-        } else if (loc.equals(new MapLocation(rc.getMapWidth() -1, 0))) {
-            rotation = 6;
-        } else {
-            rotation = 4;
+    public void clearWaterForFlag(MapLocation flag, MapLocation home) throws GameActionException {
+        for (MapInfo site : rc.senseNearbyMapInfos()) {
+            if (site.getMapLocation().distanceSquaredTo(home) <= flag.distanceSquaredTo(home) && rc.canFill(site.getMapLocation())) rc.fill(site.getMapLocation());
         }
-        for (int r = 0; r < rotation; r ++ ) {
-            left = left.rotateRight();
-            right = right.rotateRight();
-            lr = lr.rotateRight();
-            rl = rl.rotateRight();
-        }
-        Direction lro = lr.opposite();
-        // manually go through the desired strategy
-        for (int i = 0; i < 2; i++) {rc.move(left);}
-        waitAndBuildTrap(TrapType.WATER, rc.getLocation());
-        rc.move(lr);
-        waitAndDig(rc.getLocation());
-        waitAndBuildTrap(TrapType.EXPLOSIVE, rc.getLocation());
-        rc.move(lr);
-        waitAndBuildTrap(TrapType.WATER, rc.getLocation());
-        for (int i = 0; i < 2; i ++){rc.move(right);}
-        waitAndBuildTrap(TrapType.WATER, rc.getLocation());
-        rc.move(lro);
-        waitAndDig(rc.getLocation());
-        rc.move(lro);
-        waitAndBuildTrap(TrapType.WATER, rc.getLocation());
-        rc.move(lro);
-        waitAndDig(rc.getLocation());
-        rc.move(lro);
-        waitAndBuildTrap(TrapType.WATER, rc.getLocation());
-        rc.move(rl);
-        waitAndBuildTrap(TrapType.WATER, rc.getLocation());
-        rc.move(rl);
-        waitAndDig(rc.getLocation());
-        rc.move(rl);
-        waitAndBuildTrap(TrapType.WATER, rc.getLocation());
-        rc.move(rl);
-        waitAndDig(rc.getLocation());
-        rc.move(rl);
-        waitAndBuildTrap(TrapType.WATER, rc.getLocation());
     }
-
 
 
 

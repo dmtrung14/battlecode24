@@ -4,13 +4,11 @@ import battlecode.common.*;
 import battlecode.world.Trap;
 import scala.collection.immutable.Stream;
 
-import java.awt.peer.CanvasPeer;
 import java.util.*;
 
+import static defaultplayer.Constants.*;
 import static defaultplayer.util.CheckWrapper.*;
-//
-//import static defaultplayer.util.CheckWrapper.contains;
-//import static defaultplayer.util.CheckWrapper.isBuilder;
+
 
 public class Setup {
 
@@ -27,13 +25,13 @@ public class Setup {
     }
 
     public void spawn() throws GameActionException {
-
         while (!rc.isSpawned()) {
             if (Constants.myID == 0) {
                 Constants.myID = Comms.incrementAndGetId(rc);
                 Constants.RANDOM = new Random(Constants.myID);
             } else if (contains(Constants.BUILDERS, Constants.myID)) {
-                rc.spawn(Constants.SPAWN_ZONES[9 * (Constants.myID - 1) + 4]);
+                MapLocation spawnPosition = SPAWN_ZONES[9 * (myID - 1) + 4];
+                if (rc.canSpawn(spawnPosition)) rc.spawn(spawnPosition);
             } else {
                 int randomZone = rand.nextInt(27);
                 for (int i = 27; i >= 1; i--) {
@@ -43,6 +41,14 @@ public class Setup {
                 }
             }
 
+        }
+    }
+
+    public void initializeStatic() throws GameActionException {
+        for (int i = 0; i < 3; i++) {
+            Comms.setFlagLocation(rc, rc.getTeam().opponent(), i, new MapLocation(NULL_COOR, NULL_COOR));
+            Constants.ENEMY_FLAGS[i] = new MapLocation(NULL_COOR, NULL_COOR);
+            Constants.ENEMY_FLAGS_PING[i] = new MapLocation(NULL_COOR, NULL_COOR);
         }
     }
 
@@ -166,8 +172,9 @@ public class Setup {
         }
     }
     public void backFlagLoc() throws GameActionException {
-        MapLocation FlagLoc = Our_Flag[Constants.myID];
-        while(rc.getLocation() != FlagLoc){
+        if (!isBuilder() || !rc.isSpawned()) return;
+        MapLocation FlagLoc = Constants.ALLY_FLAGS[Constants.myID - 1];
+        while(rc.getLocation() != FlagLoc && rc.isSpawned()){
             Direction dir = rc.getLocation().directionTo(FlagLoc);
             if(rc.canMove(dir)){
                 rc.move(dir);
@@ -175,7 +182,7 @@ public class Setup {
             else if(rc.canMove(dir.rotateLeft())){
                 rc.move(dir.rotateLeft());
             }
-            else{
+            else if (rc.canMove(dir.rotateRight())){
                 rc.move(dir.rotateRight());
             }
         }

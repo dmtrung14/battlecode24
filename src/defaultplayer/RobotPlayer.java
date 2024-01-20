@@ -28,12 +28,12 @@ public strictfp class RobotPlayer {
         Constants.RANDOM = new Random(Constants.myID);
         Setup setup = new Setup(rc);
         MainPhase main = new MainPhase(rc);
+        setup.initializeStatic();
         
         while (true) {
             try {
                 if (rc.getRoundNum() <= GameConstants.SETUP_ROUNDS) {
                     setup.run();
-//                    rc.setIndicatorString(String.format("myID: %s", Constants.myID));
                 } else {
                     setup.backFlagLoc();
                     main.run();

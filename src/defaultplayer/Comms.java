@@ -84,6 +84,7 @@ public class Comms {
         int value = rc.readSharedArray(index);
         int x = value >>> 10;
         int y = (value >>> 4) & 0b111111;
+        if (x > 60) return null;
         return new MapLocation(x, y);
     }
 

@@ -109,11 +109,12 @@ public class Pathfind {
             int minDistanceToOtherB = Integer.MAX_VALUE;
             for (int j = 0; j < 3; j ++ ){
                 try {
-                    if (j + 1 != Constants.myID && current.distanceSquaredTo(Comms.getFlagLocation(rc, rc.getTeam(), j)) < minDistanceToOtherA) {
-                        minDistanceToOtherA = a.distanceSquaredTo(Comms.getFlagLocation(rc, rc.getTeam(), j));
+                    MapLocation flag = Comms.getFlagLocation(rc, rc.getTeam(), j);
+                    if (j + 1 != Constants.myID && current.distanceSquaredTo(flag) < minDistanceToOtherA) {
+                        minDistanceToOtherA = a.distanceSquaredTo(flag);
                     }
-                    if (j + 1 != Constants.myID && current.distanceSquaredTo(Comms.getFlagLocation(rc, rc.getTeam(), j)) < minDistanceToOtherB) {
-                        minDistanceToOtherB = b.distanceSquaredTo(Comms.getFlagLocation(rc, rc.getTeam(), j));
+                    if (j + 1 != Constants.myID && current.distanceSquaredTo(flag) < minDistanceToOtherB) {
+                        minDistanceToOtherB = b.distanceSquaredTo(flag);
                     }
                 } catch (GameActionException e) {
                     throw new RuntimeException(e);

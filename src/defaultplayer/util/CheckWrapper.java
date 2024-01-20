@@ -1,7 +1,7 @@
 package defaultplayer.util;
 
 import battlecode.common.*;
-import defaultplayer.Constants;
+import static defaultplayer.Constants.*;
 import defaultplayer.Pathfind;
 
 import java.awt.*;
@@ -16,11 +16,23 @@ public class CheckWrapper {
         return false;
     }
 
+    public static <T> int getIndex(T[] array, T value) {
+        for (int i = 0 ; i < array.length; i ++ ) if (value.equals(array[i])) return i;
+        return -1;
+    }
+
+    public static int myFlagLocalId(RobotController rc) throws GameActionException {
+        for (FlagInfo flag : rc.senseNearbyFlags(0, rc.getTeam().opponent())) {
+            return getIndex(ENEMY_FLAGS, flag.getLocation());
+        }
+        return -1;
+    }
+
     public static boolean isBuilder() {
-        return contains(Constants.BUILDERS, Constants.myID);
+        return contains(BUILDERS, myID);
     }
     public static boolean isExplorer() {
-        return 4 <= Constants.myID;
+        return 4 <= myID;
     }
 
     public static boolean isNearDam(RobotController rc) throws GameActionException {
@@ -43,6 +55,7 @@ public class CheckWrapper {
 
     public static boolean guardThisFlag(RobotController rc, int flag) {
         // TODO : Configure the logic for which robots to rush back when a flag is in danger
-        return 4 + flag * 5 <= Constants.myID && Constants.myID < 9 + flag * 5;
+        return 4 + flag * 5 <= myID && myID < 9 + flag * 5;
     }
+
 }
