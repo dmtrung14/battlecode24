@@ -182,7 +182,6 @@ public class Setup {
                 }
                 digLand(100);
                 Pathfind.moveToward(rc, Constants.ALLY_FLAGS[Constants.myID - 1], false);
-
             } else if (isExplorer()) {
                 if (rc.getRoundNum() <= Constants.EXPLORE_ROUNDS) Pathfind.explore(rc);
                 else {
