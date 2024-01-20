@@ -1,6 +1,7 @@
 package defaultplayer;
 
 import battlecode.common.*;
+import battlecode.world.Trap;
 import scala.collection.immutable.Stream;
 
 import java.util.*;
@@ -25,12 +26,13 @@ public class Setup {
     }
 
     public void spawn() throws GameActionException {
+
         while (!rc.isSpawned()) {
             if (Constants.myID == 0) {
                 Constants.myID = Comms.incrementAndGetId(rc);
                 Constants.RANDOM = new Random(Constants.myID);
             } else if (contains(Constants.BUILDERS, Constants.myID)) {
-                rc.spawn(Constants.SPAWN_ZONES[9 * (Constants.myID - 1) + 4]); //
+                rc.spawn(Constants.SPAWN_ZONES[9 * (Constants.myID - 1) + 4]);
             } else {
                 int randomZone = rand.nextInt(27);
                 for (int i = 27; i >= 1; i--) {
@@ -123,28 +125,31 @@ public class Setup {
 
     public void buildAroundFlags() throws GameActionException {
         MapLocation flagLoc = rc.getLocation();
-        MapInfo[] around_flag = rc.senseNearbyMapInfos(flagLoc, 2);
+        MapInfo[] around_flag = rc.senseNearbyMapInfos(flagLoc, 5);
         for (MapInfo a : around_flag) {
             if (a.isPassable() && !a.getMapLocation().equals(flagLoc)) {
                 if ((a.getMapLocation().x + a.getMapLocation().y) % 2 == 1) {
-                    builder.waitAndBuildTrap(TrapType.WATER, a.getMapLocation());
+                    builder.waitAndBuildTrapTurn(TrapType.STUN, a.getMapLocation(), 1);
                 } else {
-                    builder.waitAndBuildTrap(TrapType.EXPLOSIVE, a.getMapLocation());
+                    builder.waitAndBuildTrapTurn(TrapType.EXPLOSIVE, a.getMapLocation(), 1);
                 }
             }
         }
         AfterbuildTrap = true;
     }
 
-    public void digLand() throws GameActionException {
+    public void digLand(int radius) throws GameActionException {
         Direction[] dirs = Direction.allDirections();
         Direction dir = dirs[rand.nextInt(dirs.length)];
-        while (rc.canMove(dir) && rc.getLocation().distanceSquaredTo(Our_Flag[Constants.myID]) <= 20) {
+        while (rc.canMove(dir) && rc.getLocation().distanceSquaredTo(Our_Flag[Constants.myID]) <= radius) {
             rc.move(dir);
             for (Direction d : dirs) {
-                if (rc.canDig(rc.getLocation().add(d))
-                        && (rc.getLocation().add(d).x + rc.getLocation().add(d).y) % 2 == 0) {
-                    rc.dig(rc.getLocation().add(d));
+                MapLocation site = rc.getLocation().add(d);
+                if (rc.canDig(site)
+                        && (site.x + site.y) % 2 == 0) {
+                    rc.dig(site);
+                } else if (rc.canBuild(TrapType.WATER, site)) {
+                    builder.waitAndBuildTrapTurn(TrapType.WATER, site, 2);
                 }
             }
         }
@@ -175,7 +180,8 @@ public class Setup {
                 if (!AfterbuildTrap) {
                     buildAroundFlags();
                 }
-                digLand();
+                digLand(100);
+                Pathfind.moveToward(rc, Constants.ALLY_FLAGS[Constants.myID - 1], false);
 
             } else if (isExplorer()) {
                 if (rc.getRoundNum() <= Constants.EXPLORE_ROUNDS) Pathfind.explore(rc);

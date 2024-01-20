@@ -4,6 +4,8 @@ import battlecode.common.*;
 
 import java.util.ArrayList;
 
+import static defaultplayer.util.ZoneInfo.*;
+
 public class Comms {
     private static final int BOT_ID_INDEX = 0;
     private static final int SYM_INDEX = 0;
@@ -123,7 +125,7 @@ public class Comms {
         double zoneHeight = Constants.mapHeight * 0.1;
         int zoneX = (int) Math.floor(loc.x / zoneWidth);
         int zoneY = (int) Math.floor(loc.y / zoneHeight);
-        int zoneId = zoneX * 10 + zoneY;
+        int zoneId = getZoneId(loc);
         return ZONE_START_INDEX * 16 + zoneId * 9;
     }
 
@@ -207,5 +209,9 @@ public class Comms {
         setZoneRobots(rc, loc, rc.getTeam(), numAllies);
         setZoneRobots(rc, loc, rc.getTeam().opponent(), numEnemies);
         setZoneTimestamp(rc, loc, rc.getRoundNum());
+    }
+
+    public static void fetchZoneInfo(RobotController rc, int id) throws GameActionException {
+
     }
 }

@@ -57,13 +57,15 @@ public class Pathfind {
     }
 
     public static void moveToward(RobotController rc, MapLocation target, boolean fill) throws GameActionException {
+        if (!rc.isSpawned()) return;
         if (target != curTarget) {
             curTarget = target;
             goingAroundObstacle = false;
         }
         if (!goingAroundObstacle) {
-            Direction dir = rc.getLocation().directionTo(target);
-            MapLocation loc = rc.getLocation().add(dir);
+            MapLocation current = rc.getLocation();
+            Direction dir = current.directionTo(target);
+            MapLocation loc = current.add(dir);
             if (isPassable(rc, loc, fill)) {
                 if (rc.canFill(loc)) rc.fill(loc);
                 if (rc.canMove(dir)) rc.move(dir);
@@ -82,7 +84,7 @@ public class Pathfind {
                     obstacleDir = obstacleDir.rotateRight().rotateRight();
                     break;
                 } else {
-                    obstacleDir = obstacleDir.rotateLeft();
+                    obstacleDir = obstacleDir.rotateLeft(); // this is probably what causes the bot to go in circle
                 }
             }
             int distSquared = rc.getLocation().distanceSquaredTo(target);
@@ -156,92 +158,4 @@ public class Pathfind {
         return possibleMoves.toArray(results);
     }
     // execute these algorithms within vision range
-
-    public static MapLocation nearestFlag(RobotController rc) {
-        if (!rc.isSpawned()) return null;
-        int minDistance = Integer.MAX_VALUE;
-        MapLocation nearest = null;
-        MapLocation current = rc.getLocation();
-        // TODO: implement checks when enemy_flags are pinpointed
-//        for (MapLocation flag : Constants.ENEMY_FLAGS) {
-//            if (current.distanceSquaredTo(flag) < minDistance) {
-//                nearest = flag;
-//                minDistance = current.distanceSquaredTo(flag);
-//            }
-//        }
-        if (nearest == null) {
-            for (MapLocation ping : Constants.ENEMY_FLAGS_PING) {
-                if (current.distanceSquaredTo(ping) < minDistance) {
-                    nearest = ping;
-                    minDistance = current.distanceSquaredTo(ping);
-                }
-            }
-        }
-        return nearest;
-    }
-//    public static void tryRebound(RobotController rc, MapLocation center, int depth) throws GameActionException {
-//        if (!rc.isSpawned()) return;
-//        Queue<Integer> pastDistance = new LinkedList<>();
-//        for (int i = 0; i < depth; i++) pastDistance.add(rc.getLocation().distanceSquaredTo(center));
-//        MapLocation[] nextLocation = attract(rc, center, pastDistance.remove());
-//        int counter = 0;
-//        int avg = (Constants.mapHeight + Constants.mapWidth) / 2;
-//        while ((nextLocation.length > 0) && counter <= avg) {
-//            pastDistance.add(rc.getLocation().distanceSquaredTo(center));
-//            loop: while (true) {
-//                for (MapLocation loc : nextLocation) {
-//                    if (!rc.isSpawned()) return;
-//                    Direction dir = rc.getLocation().directionTo(loc);
-//                    if (rc.canMove(dir)) {
-//                        rc.move(dir);
-//                        break loop;
-//                    }
-//                }
-//                if (counter <= avg) {
-//                    counter++;
-//                    Clock.yield();
-//                }
-//            }
-//            if (!rc.isSpawned()) return;
-//            nextLocation = attract(rc, center, pastDistance.remove());
-//            counter++;
-//        }
-//    }
-
-//    public static void moveToCenter(RobotController rc) throws GameActionException {
-//        MapLocation center = new MapLocation(Constants.mapWidth / 2, Constants.mapHeight / 2);
-//        Queue<Integer> pastDistance = new LinkedList<>();
-//        pastDistance.add(rc.getLocation().distanceSquaredTo(center));
-//        Direction lastDir = Direction.CENTER;
-//        MapLocation[] nextLocation = attract(rc, center, pastDistance.remove());
-//        while ((nextLocation.length > 0 || !isNearDam(rc)) && rc.getRoundNum() <= GameConstants.SETUP_ROUNDS) {
-//            pastDistance.add(rc.getLocation().distanceSquaredTo(center));
-//
-//            if (nextLocation.length > 0) {
-//                loop: while (true) {
-//                    for (MapLocation loc : nextLocation) {
-//                        Direction dir = rc.getLocation().directionTo(loc);
-//                        if (rc.canMove(dir)) {
-//                            rc.move(dir);
-//                            lastDir = dir;
-//                            break loop;
-//                        }
-//                    }
-//                    if (rc.getRoundNum() < GameConstants.SETUP_ROUNDS) {
-//                        Clock.yield();
-//                    }
-//                }
-//                nextLocation = attract(rc, center, pastDistance.remove());
-//            } else {
-//                if (rc.canMove(lastDir)) rc.move(lastDir);
-//                else if (rc.canMove(lastDir.rotateLeft())) {
-//                    rc.move(lastDir.rotateLeft());
-//                    lastDir = lastDir.rotateLeft();
-//                } else if (rc.canMove(lastDir.rotateRight())) {
-//                    rc.move(lastDir.rotateRight());
-//                    lastDir = lastDir.rotateRight();
-//                }
-//            }
-//        }
-//    }
 }

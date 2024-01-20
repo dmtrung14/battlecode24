@@ -4,7 +4,9 @@ import battlecode.common.*;
 import com.sun.tools.internal.jxc.ap.Const;
 import scala.collection.immutable.Stream;
 
+import java.util.*;
 import static defaultplayer.util.CheckWrapper.*;
+import static defaultplayer.util.Optimizer.*;
 
 public class MainPhase {
     private final RobotController rc;
@@ -26,6 +28,13 @@ public class MainPhase {
 
     public void tryAttack() throws GameActionException {
         RobotInfo[] nearbyEnemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
+        MapLocation current = rc.getLocation();
+        Arrays.sort(nearbyEnemies, new Comparator<RobotInfo>() {
+            @Override
+            public int compare(RobotInfo o1, RobotInfo o2) {
+                return Integer.compare(o1.getLocation().distanceSquaredTo(current), o2.getLocation().distanceSquaredTo(current));
+            }
+        });
         for (RobotInfo robot : nearbyEnemies) {
             if (robot.hasFlag()) {
                 Pathfind.moveToward(rc, robot.getLocation(), false);
@@ -34,16 +43,19 @@ public class MainPhase {
             }
         }
         for (RobotInfo robot : nearbyEnemies) {
-            MapLocation current = rc.getLocation();
-            if (current.distanceSquaredTo(robot.getLocation()) > 9) {
-                builder.waitAndBuildTrapTurn(TrapType.STUN, current, 2);
+            if (current.distanceSquaredTo(robot.getLocation()) > 10) {
+                tryHeal();
                 break;
-            } else if (current.distanceSquaredTo(robot.getLocation()) > 4) {
+            } else if (current.distanceSquaredTo(robot.getLocation()) > 8) {
+                tryHeal();
                 builder.waitAndBuildTrapTurn(TrapType.WATER, current, 2);
                 break;
-            } else if (current.distanceSquaredTo(robot.getLocation()) > 2) {
+            } else if (current.distanceSquaredTo(robot.getLocation()) > 6) {
+                tryHeal();
                 builder.waitAndBuildTrapTurn(TrapType.EXPLOSIVE, current, 2);
                 break;
+            } else if (current.distanceSquaredTo(robot.getLocation()) > 4) {
+                builder.waitAndBuildTrapTurn(TrapType.STUN, current, 2);
             }
             Pathfind.moveToward(rc, robot.getLocation(), false);
             if (rc.canAttack(robot.getLocation())) {
@@ -63,13 +75,31 @@ public class MainPhase {
     public void tryUpdateInfo() throws GameActionException {
         if (!rc.isSpawned()) return;
         Constants.ENEMY_FLAGS_PING = rc.senseBroadcastFlagLocations();
+
+    }
+
+    public void tryCaptureFlag() throws GameActionException {
+        if (!rc.isSpawned()) return;
+        if (!rc.hasFlag()) {
+            FlagInfo[] flags = rc.senseNearbyFlags(-1, rc.getTeam().opponent());
+            if (flags.length > 0 && !flags[0].isPickedUp()){
+                Pathfind.moveToward(rc, flags[0].getLocation(), true);
+                if (rc.canPickupFlag(flags[0].getLocation())) rc.pickupFlag(flags[0].getLocation());
+            } else if (flags.length > 0  && flags[0].isPickedUp()) {
+                Pathfind.moveToward(rc, nearestSpawnZone(rc), true);
+            }
+        }
+        while (rc.hasFlag()) {
+            Pathfind.moveToward(rc, nearestSpawnZone(rc), true);
+        }
     }
     public void run() throws GameActionException {
         if (isBuilder()) {
             if (!rc.isSpawned()) {
                 setup.spawn();
-                Pathfind.moveToward(rc, Constants.ALLY_FLAGS[Constants.myID - 1], false);
+                Pathfind.moveToward(rc, Constants.ALLY_FLAGS[Constants.myID - 1], true);
             } else {
+                if (isFlagDanger(rc)) tryAttack();
                 if (isFlagDanger(rc) != Constants.IS_MY_FLAG_DANGER) {
                     Comms.setFlagDanger(rc, Constants.myID - 1, isFlagDanger(rc));
                     Constants.IS_MY_FLAG_DANGER = isFlagDanger(rc);
@@ -81,14 +111,18 @@ public class MainPhase {
             tryUpdateInfo();
 
             // TODO : Configure the logic for the order of attack, movement when flag is in danger.
-
             tryAttack();
+            tryCaptureFlag();
             if (!rc.isSpawned()) return;
             tryHeal();
             // TODO : Configure this tryRebound in main phase .run();
-            Pathfind.moveToward(rc, new MapLocation(Constants.mapWidth / 2, Constants.mapHeight / 2), false);
+
+            if (nearestFlag(rc) != null) Pathfind.moveToward(rc, nearestFlag(rc), true);
+            else Pathfind.moveToward(rc, new MapLocation(Constants.mapWidth/2, Constants.mapHeight/2), true);
             if (!rc.isSpawned()) return;
+
             Pathfind.explore(rc);
+
             Comms.reportZoneInfo(rc);
         }
     }
