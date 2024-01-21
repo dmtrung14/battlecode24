@@ -28,12 +28,7 @@ public class MainPhase {
     public void tryAttack() throws GameActionException {
         RobotInfo[] nearbyEnemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
         MapLocation current = rc.getLocation();
-        Arrays.sort(nearbyEnemies, new Comparator<RobotInfo>() {
-            @Override
-            public int compare(RobotInfo o1, RobotInfo o2) {
-                return Integer.compare(o1.getLocation().distanceSquaredTo(current), o2.getLocation().distanceSquaredTo(current));
-            }
-        });
+        Arrays.sort(nearbyEnemies, Comparator.comparingInt(o -> o.getLocation().distanceSquaredTo(current)));
         for (RobotInfo robot : nearbyEnemies) {
             if (robot.hasFlag()) {
                 Pathfind.moveToward(rc, robot.getLocation(), false);
@@ -73,6 +68,7 @@ public class MainPhase {
 
     public void tryUpdateInfo() throws GameActionException {
         if (!rc.isSpawned()) return;
+        Comms.reportNearbyEnemyFlags(rc);
         MapLocation[] flagPings = rc.senseBroadcastFlagLocations();
         for (int i = 0; i < 3; i++) {
             if (i < flagPings.length) ENEMY_FLAGS_PING[i] = flagPings[i];
@@ -82,7 +78,6 @@ public class MainPhase {
 
     public void tryCaptureFlag() throws GameActionException {
         if (!rc.isSpawned()) return;
-        Comms.reportNearbyEnemyFlags(rc);
         if (!rc.hasFlag()) {
             FlagInfo[] flags = rc.senseNearbyFlags(-1, rc.getTeam().opponent());
             if (flags.length > 0 && !flags[0].isPickedUp()){
@@ -92,15 +87,17 @@ public class MainPhase {
                 builder.clearWaterForFlag(flags[0].getLocation(), nearestSpawnZone(rc));
                 Pathfind.moveToward(rc, nearestSpawnZone(rc), true);
             }
-        } else {
-            Pathfind.moveToward(rc, nearestSpawnZone(rc), false);
-            MapInfo[] nearby = rc.senseNearbyMapInfos(2);
-            boolean isHome = false;
-            for (MapInfo location : nearby) {
-                if (location.getSpawnZoneTeamObject() == rc.getTeam()) isHome = true;
-            }
-            if (isHome) Comms.reportEnemyFlagCaptured(rc, myFlagLocalId(rc));
         }
+    }
+
+    public void tryReturnFlag() throws GameActionException {
+        Pathfind.moveToward(rc, nearestSpawnZone(rc), false);
+        MapInfo[] nearby = rc.senseNearbyMapInfos(2);
+        boolean isHome = false;
+        for (MapInfo location : nearby) {
+            if (location.getSpawnZoneTeamObject() == rc.getTeam()) isHome = true;
+        }
+        if (isHome) Comms.reportEnemyFlagCaptured(rc, myFlagLocalId(rc));
     }
 
     public void run() throws GameActionException {
@@ -118,17 +115,20 @@ public class MainPhase {
             tryUpdateInfo();
 
             // TODO : Configure the logic for the order of attack, movement when flag is in danger.
-            tryAttack();
-            tryCaptureFlag();
-            if (!rc.isSpawned()) return;
-            tryHeal();
-            // TODO : Configure this tryRebound in main phase .run();
+            if (rc.hasFlag()) tryReturnFlag();
+            else {
+                tryAttack();
+                tryCaptureFlag();
+                if (!rc.isSpawned()) return;
+                tryHeal();
+                // TODO : Configure this tryRebound in main phase .run();
 
-            if (nearestFlag(rc) != null) Pathfind.moveToward(rc, nearestFlag(rc), true);
-            else Pathfind.moveToward(rc, new MapLocation(mapWidth/2, mapHeight/2), true);
-            if (!rc.isSpawned()) return;
+                if (nearestFlag(rc) != null) Pathfind.moveToward(rc, nearestFlag(rc), true);
+                else Pathfind.moveToward(rc, new MapLocation(mapWidth / 2, mapHeight / 2), true);
+                if (!rc.isSpawned()) return;
 
-            Pathfind.explore(rc);
+                Pathfind.explore(rc);
+            }
 
             Comms.reportZoneInfo(rc);
         }

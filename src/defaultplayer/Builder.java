@@ -27,6 +27,7 @@ public class Builder {
             Clock.yield();
         }
     }
+
     public void waitAndDig(MapLocation loc) throws GameActionException {
         while (!rc.canDig(loc)) {
             MapInfo locInfo = rc.senseMapInfo(loc);
@@ -36,7 +37,6 @@ public class Builder {
             Clock.yield();
         }
         rc.dig(loc);
-
     }
 
     public void clearWaterForFlag(MapLocation flag, MapLocation home) throws GameActionException {
