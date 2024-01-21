@@ -37,21 +37,6 @@ public class MainPhase {
         }
     }
 
-//    public void tryCaptureFlag() throws GameActionException {
-//        if (!rc.isSpawned()) return;
-//        if (!rc.hasFlag()) {
-//            FlagInfo[] flags = rc.senseNearbyFlags(-1, rc.getTeam().opponent());
-//            if (flags.length > 0 && !flags[0].isPickedUp()){
-//                Pathfind.moveToward(rc, flags[0].getLocation(), true);
-//                if (rc.canPickupFlag(flags[0].getLocation())) rc.pickupFlag(flags[0].getLocation());
-//            } else if (flags.length > 0 && flags[0].isPickedUp()) {
-//                builder.clearWaterForFlag(flags[0].getLocation(), nearestSpawnZone(rc));
-//                Pathfind.moveToward(rc, nearestSpawnZone(rc), true);
-//            }
-//        }
-//    }
-
-
 
     public void run() throws GameActionException {
 //        if (rc.getRoundNum() > 400) rc.resign();
@@ -63,7 +48,8 @@ public class MainPhase {
                 Comms.setFlagDanger(rc, myID - 1, Comms.isFlagInDanger(rc, myID -1));
                 if (Comms.isFlagInDanger(rc, myID - 1)) tryAttack(rc);
             }
-        } else if (isExplorer()) {
+        }
+        else if (isExplorer()) {
             if (!rc.isSpawned()) setup.spawn();
             tryBuyGlobal();
             tryUpdateInfo();
