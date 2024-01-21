@@ -100,6 +100,42 @@ public class Pathfind {
                 (rc.sensePassability(loc) || fill && rc.canFill(loc));
     }
 
+    private static void bellmanFord(RobotController rc, MapLocation target) throws GameActionException {
+        MapLocation start = rc.getLocation();
+        int targetX = 3 + target.x - start.x;
+        int targetY = 3 + target.y - start.y;
+        if (targetX < 0 || targetX >= 8 || targetY < 0 || targetY >= 8) throw new RuntimeException();
+        int targetShift = 8 * (7 - targetY) + (7 - targetX);
+        long canReachTarget = 1L << targetShift;
+        long passable = 0;
+        for (int x = 0; x < 8; x++) {
+            for (int y = 0; y < 8; y++) {
+                MapLocation loc = new MapLocation(start.x + x - 3, start.y + y - 3);
+                if (rc.canSenseLocation(loc) && rc.sensePassability(loc)) {
+                    int shift = 8 * (7 - y) + (7 - x);
+                    passable |= (1L << shift);
+                }
+            }
+        }
+        long RIGHT_EDGE = 0x0101010101010101L;
+        long LEFT_EDGE = 0x8080808080808080L;
+        long START = 0x0000001000000000L;
+        for (int i = 0; i < 10; i++) {
+            canReachTarget = canReachTarget | ((canReachTarget << 1) & ~RIGHT_EDGE) | ((canReachTarget >>> 1) & ~LEFT_EDGE);
+            canReachTarget = canReachTarget | (canReachTarget << 8) | (canReachTarget >>> 8);
+            canReachTarget &= passable;
+            if ((canReachTarget & (START >>> 7)) != 0 && rc.canMove(Direction.NORTHWEST)) rc.move(Direction.NORTHWEST);
+            else if ((canReachTarget & (START >>> 8)) != 0 && rc.canMove(Direction.NORTH)) rc.move(Direction.NORTH);
+            else if ((canReachTarget & (START >>> 9)) != 0 && rc.canMove(Direction.NORTHEAST)) rc.move(Direction.NORTHEAST);
+            else if ((canReachTarget & (START << 1)) != 0 && rc.canMove(Direction.WEST)) rc.move(Direction.WEST);
+            else if ((canReachTarget & (START >>> 1)) != 0 && rc.canMove(Direction.EAST)) rc.move(Direction.EAST);
+            else if ((canReachTarget & (START << 9)) != 0 && rc.canMove(Direction.SOUTHWEST)) rc.move(Direction.SOUTHWEST);
+            else if ((canReachTarget & (START << 8)) != 0 && rc.canMove(Direction.SOUTH)) rc.move(Direction.SOUTH);
+            else if ((canReachTarget & (START << 7)) != 0 && rc.canMove(Direction.SOUTHEAST)) rc.move(Direction.SOUTHEAST);
+            // return
+        }
+    }
+
     public static MapLocation[] avoid(RobotController rc, MapLocation center, int distanceSquared) throws GameActionException {
         ArrayList<MapLocation> possibleMoves = new ArrayList<>();
         Comparator<MapLocation> comparator = (a, b) -> {

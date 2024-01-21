@@ -1,8 +1,6 @@
 package defaultplayer;
 
 import battlecode.common.*;
-import com.sun.tools.internal.jxc.ap.Const;
-import scala.collection.immutable.Stream;
 
 import java.util.*;
 
@@ -26,7 +24,6 @@ public class MainPhase {
         else if (rc.canBuyGlobal(GlobalUpgrade.HEALING)) rc.buyGlobal(GlobalUpgrade.HEALING);
         else if (rc.canBuyGlobal(GlobalUpgrade.CAPTURING)) rc.buyGlobal(GlobalUpgrade.CAPTURING);
     }
-
 
     public void tryAttack() throws GameActionException {
         RobotInfo[] nearbyEnemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
@@ -76,65 +73,44 @@ public class MainPhase {
 
     public void tryUpdateInfo() throws GameActionException {
         if (!rc.isSpawned()) return;
-        Comms.getFlagID(rc);
-        for (int i = 0;  i < 3; i ++ ) {
-            MapLocation opponentFlag = Comms.getFlagLocation(rc, rc.getTeam().opponent(), 2 - i);
-            MapLocation[] flagPings = rc.senseBroadcastFlagLocations();
-            if (i < flagPings.length ) ENEMY_FLAGS_PING[i] = flagPings[i];
-            else if (opponentFlag!= null) {
-                ENEMY_FLAGS_PING[i] = opponentFlag;
-            } else {
-                ENEMY_FLAGS_PING[i] = new MapLocation(NULL_COOR, NULL_COOR);
-            }
-        }
-        for (int i = 0; i < 3; i ++ ) {
-            MapLocation opponentFlag = Comms.getFlagLocation(rc, rc.getTeam().opponent(), i);
-            if (opponentFlag != null) {
-                KNOWN_ENEMY_FLAGS = i;
-                ENEMY_FLAGS[i] = opponentFlag;
-            }
+        MapLocation[] flagPings = rc.senseBroadcastFlagLocations();
+        for (int i = 0; i < 3; i++) {
+            if (i < flagPings.length) ENEMY_FLAGS_PING[i] = flagPings[i];
+            else ENEMY_FLAGS_PING[i] = Comms.getFlagLocation(rc, rc.getTeam().opponent(), 2 - i);
         }
     }
 
     public void tryCaptureFlag() throws GameActionException {
         if (!rc.isSpawned()) return;
+        Comms.reportNearbyEnemyFlags(rc);
         if (!rc.hasFlag()) {
             FlagInfo[] flags = rc.senseNearbyFlags(-1, rc.getTeam().opponent());
             if (flags.length > 0 && !flags[0].isPickedUp()){
-                if (!contains(ENEMY_FLAGS_ID, flags[0].getID())) {
-                    KNOWN_ENEMY_FLAGS += 1;
-                    ENEMY_FLAGS_ID[KNOWN_ENEMY_FLAGS] = flags[0].getID();
-                    Comms.setFlagID(rc, flags[0].getID());
-                    ENEMY_FLAGS[KNOWN_ENEMY_FLAGS] = flags[0].getLocation();
-                    Comms.setFlagLocation(rc, rc.getTeam().opponent(), KNOWN_ENEMY_FLAGS, flags[0].getLocation());
-                }
                 Pathfind.moveToward(rc, flags[0].getLocation(), true);
                 if (rc.canPickupFlag(flags[0].getLocation())) rc.pickupFlag(flags[0].getLocation());
-            } else if (flags.length > 0  && flags[0].isPickedUp()) {
+            } else if (flags.length > 0 && flags[0].isPickedUp()) {
                 builder.clearWaterForFlag(flags[0].getLocation(), nearestSpawnZone(rc));
                 Pathfind.moveToward(rc, nearestSpawnZone(rc), true);
             }
-        }
-        if (rc.hasFlag()) {
-            Pathfind.moveToward(rc, nearestSpawnZone(rc), true);
+        } else {
+            Pathfind.moveToward(rc, nearestSpawnZone(rc), false);
             MapInfo[] nearby = rc.senseNearbyMapInfos(2);
             boolean isHome = false;
-            for (MapInfo location : nearby) if (location.getSpawnZoneTeamObject() == rc.getTeam()) isHome = true;
-            if (!isHome) Comms.setFlagLocation(rc, rc.getTeam().opponent(), myFlagLocalId(rc), rc.getLocation());
-            else Comms.setFlagLocation(rc, rc.getTeam().opponent(), myID -1, new MapLocation(NULL_COOR, NULL_COOR));
+            for (MapInfo location : nearby) {
+                if (location.getSpawnZoneTeamObject() == rc.getTeam()) isHome = true;
+            }
+            if (isHome) Comms.reportEnemyFlagCaptured(rc, myFlagLocalId(rc));
         }
     }
+
     public void run() throws GameActionException {
         if (isBuilder()) {
             if (!rc.isSpawned()) {
                 setup.spawn();
                 Pathfind.moveToward(rc, ALLY_FLAGS[myID - 1], true);
             } else {
+                Comms.setFlagDanger(rc, myID - 1, isFlagDanger(rc));
                 if (isFlagDanger(rc)) tryAttack();
-                if (isFlagDanger(rc) != IS_MY_FLAG_DANGER) {
-                    Comms.setFlagDanger(rc, myID - 1, isFlagDanger(rc));
-                    IS_MY_FLAG_DANGER = isFlagDanger(rc);
-                }
             }
         } else if (isExplorer()) {
             if (!rc.isSpawned()) setup.spawn();
