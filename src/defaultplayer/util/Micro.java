@@ -13,14 +13,14 @@ public class Micro {
         /* Return level of attack from 0 (retreat) to 3 (all out attack)*/
         /* attack based on distance to flag */
         int attackLv = Integer.MIN_VALUE;
-        if (rc.senseNearbyFlags(4, rc.getTeam()).length > 0) attackLv = 3;
-        else if (rc.senseNearbyFlags(9, rc.getTeam()).length > 0) attackLv = 2;
-        else if (rc.senseNearbyFlags(16, rc.getTeam()).length > 0) attackLv = 1;
+        if (rc.senseNearbyFlags(4, rc.getTeam().opponent()).length > 0) attackLv = 3;
+        else if (rc.senseNearbyFlags(9, rc.getTeam().opponent()).length > 0) attackLv = 2;
+        else if (rc.senseNearbyFlags(16, rc.getTeam().opponent()).length > 0) attackLv = 1;
 
         /* attack lv based on enemy dynamics */
         // TODO : get nearby enemies and allies with zoning rather than just senseNearbyRobots
-        RobotInfo[] nearbyEnemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
-        RobotInfo[] nearbyAllies = rc.senseNearbyRobots(-1, rc.getTeam());
+        RobotInfo[] nearbyEnemies = rc.senseNearbyRobots(10, rc.getTeam().opponent());
+        RobotInfo[] nearbyAllies = rc.senseNearbyRobots(10, rc.getTeam());
         double allyScore = 0;
         double enemyScore = 0;
         for (RobotInfo ally : nearbyAllies) allyScore += (1 + ally.getHealth() * 0.002);
@@ -48,7 +48,7 @@ public class Micro {
         if (current.distanceSquaredTo(nearestEnemyLoc) <= 2) {
             // then attack, and walk out.
             if (rc.isActionReady()) rc.attack(nearestEnemyLoc);
-            if (rc.getLevel(SkillType.ATTACK) == 6 && rc.isActionReady()) {
+            if (rc.getLevel(SkillType.ATTACK) == 6 && rc.isActionReady() && rc.canAttack(nearestEnemyLoc)) {
                 rc.attack(nearestEnemyLoc);
             }
             retreat(rc, current.directionTo(nearestEnemyLoc).opposite());
@@ -74,8 +74,8 @@ public class Micro {
         MapLocation nearestEnemyLoc = nearestEnemy.getLocation();
         MapLocation current = rc.getLocation();
         if (current.distanceSquaredTo(nearestEnemyLoc) <= 2) {
-            if (rc.isActionReady()) rc.attack(nearestEnemyLoc);
-            if (rc.getLevel(SkillType.ATTACK) == 6 && rc.isActionReady()) {
+            if (rc.isActionReady() && rc.canAttack(nearestEnemyLoc)) rc.attack(nearestEnemyLoc);
+            if (rc.getLevel(SkillType.ATTACK) == 6 && rc.isActionReady() && rc.canAttack(nearestEnemyLoc)) {
                 rc.attack(nearestEnemyLoc);
             }
             retreat(rc, current.directionTo(nearestEnemyLoc).opposite());
@@ -96,8 +96,8 @@ public class Micro {
         MapLocation nearestEnemyLoc = nearestEnemy.getLocation();
         MapLocation current = rc.getLocation();
         if (current.distanceSquaredTo(nearestEnemyLoc) <= 2) {
-            if (rc.isActionReady()) rc.attack(nearestEnemyLoc);
-            if (rc.getLevel(SkillType.ATTACK) == 6 && rc.isActionReady()) {
+            if (rc.isActionReady() && rc.canAttack(nearestEnemyLoc)) rc.attack(nearestEnemyLoc);
+            if (rc.getLevel(SkillType.ATTACK) == 6 && rc.isActionReady() && rc.canAttack(nearestEnemyLoc)) {
                 rc.attack(nearestEnemyLoc);
             }
             retreat(rc, current.directionTo(nearestEnemyLoc).opposite());

@@ -39,6 +39,14 @@ public class CheckWrapper {
         return false;
     }
 
+    public static boolean isFlagInDanger(RobotController rc) throws GameActionException {
+        boolean isDanger = false;
+        MapLocation myFlag = ALLY_FLAGS[myID - 1];
+        for (RobotInfo robot : rc.senseNearbyRobots(-1, rc.getTeam().opponent())) {
+            if (myFlag.distanceSquaredTo(robot.getLocation()) < 20) isDanger = true; break;
+        }
+        return isBuilder() && isDanger;
+    }
     public static boolean flagInDanger(RobotController rc) throws GameActionException {
         return Comms.isFlagInDanger(rc, 0) || Comms.isFlagInDanger(rc, 1) || Comms.isFlagInDanger(rc, 2);
     }
