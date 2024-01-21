@@ -71,15 +71,18 @@ public class Comms {
     // whether a given flag is under attack
     // flag is either 0, 1, or 2
     public static boolean isFlagInDanger(RobotController rc, int flag) throws GameActionException {
+        if (flag < 0 || flag >= 3) throw new RuntimeException();
         return getBits(rc, FLAG_DANGER_INDEX + flag, 1) != 0;
     }
 
     public static void setFlagDanger(RobotController rc, int flag, boolean inDanger) throws GameActionException {
+        if (flag < 0 || flag >= 3) throw new RuntimeException();
         setBits(rc, FLAG_DANGER_INDEX + flag, inDanger ? 1 : 0, 1);
     }
 
     // add timestamps to flag locations?
     public static MapLocation getFlagLocation(RobotController rc, Team team, int flag) throws GameActionException {
+        if (flag < 0 || flag >= 3) throw new RuntimeException();
         int index = (rc.getTeam() == team ? ALLY_FLAG_LOC_START_INDEX : ENEMY_FLAG_LOC_START_INDEX) + 12 * flag;
         int value = getBits(rc, index, 12);
         int x = value >>> 6;
@@ -88,6 +91,7 @@ public class Comms {
     }
 
     public static void setFlagLocation(RobotController rc, Team team, int flag, MapLocation loc) throws GameActionException {
+        if (flag < 0 || flag >= 3) throw new RuntimeException();
         int x = loc == null ? 61 : loc.x;
         int y = loc == null ? 61 : loc.y;
         int index = (rc.getTeam() == team ? ALLY_FLAG_LOC_START_INDEX : ENEMY_FLAG_LOC_START_INDEX) + 12 * flag;
@@ -97,10 +101,12 @@ public class Comms {
 
     // we assume that a flag ID fits in 12 bits, which is an internal game engine detail
     private static int getEnemyFlagId(RobotController rc, int flag) throws GameActionException {
+        if (flag < 0 || flag >= 3) throw new RuntimeException();
         return getBits(rc, ENEMY_FLAG_ID_START_INDEX + 12 * flag, 12);
     }
 
     private static void setEnemyFlagId(RobotController rc, int flag, int id) throws GameActionException {
+        if (flag < 0 || flag >= 3) throw new RuntimeException();
         setBits(rc, ENEMY_FLAG_ID_START_INDEX + 12 * flag, id, 12);
     }
 

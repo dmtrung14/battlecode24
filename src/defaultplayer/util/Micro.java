@@ -1,16 +1,11 @@
 package defaultplayer.util;
 
 import battlecode.common.*;
-import battlecode.world.Trap;
-import com.sun.tools.internal.jxc.ap.Const;
 import defaultplayer.Builder;
 import defaultplayer.Comms;
 import defaultplayer.Constants;
 import defaultplayer.Pathfind;
 
-import java.awt.*;
-
-import static defaultplayer.util.CheckWrapper.myFlagLocalId;
 import static defaultplayer.util.Optimizer.*;
 
 public class Micro {
@@ -139,36 +134,24 @@ public class Micro {
     public static void tryCaptureFlag(RobotController rc, Builder builder) throws GameActionException {
         if (!rc.isSpawned()) return;
         Comms.reportNearbyEnemyFlags(rc);
-        if (!rc.hasFlag()) {
-            FlagInfo[] flags = rc.senseNearbyFlags(-1, rc.getTeam().opponent());
-            if (flags.length > 0 && !flags[0].isPickedUp()){
-                Pathfind.moveToward(rc, flags[0].getLocation(), true);
-                if (rc.canPickupFlag(flags[0].getLocation())) rc.pickupFlag(flags[0].getLocation());
-            } else if (flags.length > 0 && flags[0].isPickedUp()) {
-                builder.clearWaterForFlag(flags[0].getLocation(), nearestSpawnZone(rc));
-                Pathfind.moveToward(rc, nearestSpawnZone(rc), true);
-            }
-        } else {
-            Pathfind.moveToward(rc, nearestSpawnZone(rc), false);
-            MapInfo[] nearby = rc.senseNearbyMapInfos(2);
-            for (MapInfo location : nearby) {
-                if (location.getSpawnZoneTeamObject() == rc.getTeam()) {
-                    rc.dropFlag(location.getMapLocation());
-                    Comms.reportEnemyFlagCaptured(rc, myFlagLocalId(rc));
-                    return;
-                }
-            }
+        FlagInfo[] flags = rc.senseNearbyFlags(-1, rc.getTeam().opponent());
+        if (flags.length > 0 && !flags[0].isPickedUp()){
+            Pathfind.moveToward(rc, flags[0].getLocation(), true);
+            if (rc.canPickupFlag(flags[0].getLocation())) rc.pickupFlag(flags[0].getLocation());
+        } else if (flags.length > 0 && flags[0].isPickedUp()) {
+            builder.clearWaterForFlag(flags[0].getLocation(), nearestSpawnZone(rc));
+            Pathfind.moveToward(rc, nearestSpawnZone(rc), true);
         }
     }
 
     public static void tryReturnFlag(RobotController rc) throws GameActionException {
-        Pathfind.moveToward(rc, nearestSpawnZone(rc), false);
-        MapInfo[] nearby = rc.senseNearbyMapInfos(2);
-        boolean isHome = false;
-        for (MapInfo location : nearby) {
-            if (location.getSpawnZoneTeamObject() == rc.getTeam()) isHome = true;
+        MapLocation spawnZone = nearestSpawnZone(rc);
+        // we must report the flag capture before the flag disappears
+        if (rc.isMovementReady() && rc.getLocation().isAdjacentTo(spawnZone)) {
+            FlagInfo[] flag = rc.senseNearbyFlags(0, rc.getTeam().opponent());
+            Comms.reportEnemyFlagCaptured(rc, flag[0].getID());
         }
-        if (isHome) Comms.reportEnemyFlagCaptured(rc, myFlagLocalId(rc));
+        Pathfind.moveToward(rc, spawnZone, false);
     }
 
     public static int toReturnAndGuard(RobotController rc) throws GameActionException {

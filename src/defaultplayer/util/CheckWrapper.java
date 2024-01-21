@@ -21,16 +21,6 @@ public class CheckWrapper {
         return -1;
     }
 
-    public static int myFlagLocalId(RobotController rc) throws GameActionException {
-        FlagInfo[] flags = rc.senseNearbyFlags(-1, rc.getTeam().opponent());
-        for (FlagInfo flag : flags) {
-            if (flag.getLocation().equals(rc.getLocation())) {
-                return flag.getID();
-            }
-        }
-        return -1;
-    }
-
     public static boolean isBuilder() {
         return contains(BUILDERS, myID);
     }
