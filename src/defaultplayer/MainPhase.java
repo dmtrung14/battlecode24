@@ -56,6 +56,10 @@ public class MainPhase {
 
             // TODO : Configure the logic for the order of attack, movement when flag is in danger.
             if (rc.hasFlag()) tryReturnFlag(rc);
+            else if (flagInDanger(rc)) {
+                int toGuard = toReturnAndGuard(rc);
+                if (toGuard != (-1)) Pathfind.moveToward(rc, ALLY_FLAGS[toGuard], false);
+            }
             else {
                 tryAttack(rc);
                 tryCaptureFlag(rc, builder);
