@@ -30,7 +30,7 @@ public class Optimizer {
         MapLocation nearest = null;
         MapLocation current = rc.getLocation();
         for (MapLocation ping : ENEMY_FLAGS_PING) {
-            if (ping.x != NULL_COOR && current.distanceSquaredTo(ping) < minDistance) {
+            if (ping != null && current.distanceSquaredTo(ping) < minDistance) {
                 nearest = ping;
                 minDistance = current.distanceSquaredTo(ping);
             }

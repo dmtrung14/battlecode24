@@ -1,30 +1,36 @@
 package defaultplayer;
 
 import battlecode.common.*;
-import scala.collection.immutable.Stream;
 
 import java.util.ArrayList;
 
-import static defaultplayer.util.ZoneInfo.*;
+import defaultplayer.util.ZoneInfo;
 
 public class Comms {
     private static final int BOT_ID_INDEX = 0;
-    private static final int SYM_INDEX = 0;
-    private static final int FLAG_DANGER_INDEX = 0;
-    private static final int FLAG_LOC_START_INDEX = 1;
-    private static final int ZONE_START_INDEX = 7;
+    private static final int SYM_INDEX = 6;
+    private static final int FLAG_DANGER_INDEX = 9;
+    private static final int ALLY_FLAG_LOC_START_INDEX = 12;
+    private static final int ENEMY_FLAG_LOC_START_INDEX = 48;
+    private static final int ENEMY_FLAG_ID_START_INDEX = 84;
+    private static final int ZONE_START_INDEX = 120;
+
+    private static final int NULL_FLAG_ID = 0xFFF;
 
     public static void init(RobotController rc) throws GameActionException {
         // initially every symmetry is possible
-        rc.writeSharedArray(SYM_INDEX, 0b111 << 7);
+        setBits(rc, SYM_INDEX, 0b111, 3);
+        for (int i = 0; i < 3; i++) {
+            setEnemyFlagId(rc, i, NULL_FLAG_ID);
+        }
     }
 
     // can use this to assign robots roles at the start of the game
+    // id ranges from 1 to 50
     public static int incrementAndGetId(RobotController rc) throws GameActionException {
-        int value = rc.readSharedArray(BOT_ID_INDEX);
-        int newValue = value + (1 << 10);
-        rc.writeSharedArray(BOT_ID_INDEX, newValue);
-        return value >>> 10;
+        int value = getBits(rc, BOT_ID_INDEX, 6);
+        setBits(rc, BOT_ID_INDEX, value + 1, 6);
+        return value + 1;
     }
 
     private static int symmetryId(Symmetry sym) {
@@ -42,16 +48,11 @@ public class Comms {
 
     // whether a certain map symmetry is possible
     public static boolean isPossibleSymmetry(RobotController rc, Symmetry sym) throws GameActionException {
-        int value = rc.readSharedArray(SYM_INDEX);
-        int mask = 1 << (9 - symmetryId(sym));
-        return (value & mask) != 0;
+        return getBits(rc, SYM_INDEX + symmetryId(sym), 1) != 0;
     }
 
     public static void breakSymmetry(RobotController rc, Symmetry sym) throws GameActionException {
-        int value = rc.readSharedArray(SYM_INDEX);
-        int mask = 1 << (9 - symmetryId(sym));
-        int newValue = value & ~mask;
-        rc.writeSharedArray(SYM_INDEX, newValue);
+        setBits(rc, SYM_INDEX + symmetryId(sym), 0, 1);
     }
 
     public static Symmetry[] possibleSymmetries(RobotController rc) throws GameActionException {
@@ -67,96 +68,64 @@ public class Comms {
     // whether a given flag is under attack
     // flag is either 0, 1, or 2
     public static boolean isFlagInDanger(RobotController rc, int flag) throws GameActionException {
-        int value = rc.readSharedArray(FLAG_DANGER_INDEX);
-        int mask = 1 << (6 - flag);
-        return (value & mask) != 0;
+        return getBits(rc, FLAG_DANGER_INDEX + flag, 1) != 0;
     }
 
     public static void setFlagDanger(RobotController rc, int flag, boolean inDanger) throws GameActionException {
-        int value = rc.readSharedArray(FLAG_DANGER_INDEX);
-        int mask = 1 << (6 - flag);
-        int newValue = (value & ~mask) | (inDanger ? mask : 0);
-        rc.writeSharedArray(FLAG_DANGER_INDEX, newValue);
+        setBits(rc, FLAG_DANGER_INDEX + flag, inDanger ? 1 : 0, 1);
     }
 
     // add timestamps to flag locations?
     public static MapLocation getFlagLocation(RobotController rc, Team team, int flag) throws GameActionException {
-        int index = FLAG_LOC_START_INDEX + (rc.getTeam() == team ? 0 : 3) + flag;
-        int value = rc.readSharedArray(index);
-        int x = value >>> 10;
-        int y = (value >>> 4) & 0b111111;
-        if (x > 60) return null;
-        return new MapLocation(x, y);
+        int index = (rc.getTeam() == team ? ALLY_FLAG_LOC_START_INDEX : ENEMY_FLAG_LOC_START_INDEX) + 12 * flag;
+        int value = getBits(rc, index, 12);
+        int x = value >>> 6;
+        int y = value & 0b111111;
+        return x > 60 ? null : new MapLocation(x, y);
     }
 
     public static void setFlagLocation(RobotController rc, Team team, int flag, MapLocation loc) throws GameActionException {
-        int index = FLAG_LOC_START_INDEX + (rc.getTeam() == team ? 0 : 3) + flag;
-        int value = (loc.x << 10) + (loc.y << 4);
-        rc.writeSharedArray(index, value);
+        int x = loc == null ? 61 : loc.x;
+        int y = loc == null ? 61 : loc.y;
+        int index = (rc.getTeam() == team ? ALLY_FLAG_LOC_START_INDEX : ENEMY_FLAG_ID_START_INDEX) + 12 * flag;
+        int value = (x << 6) + y;
+        setBits(rc, index, value, 12);
     }
 
-    private static int getBits32(RobotController rc, int arrayIndex) throws GameActionException {
-        int a = rc.readSharedArray(arrayIndex);
-        int b = rc.readSharedArray(arrayIndex + 1);
-        return (a << 16) + b;
+    // we assume that a flag ID fits in 12 bits, which is an internal game engine detail
+    private static int getEnemyFlagId(RobotController rc, int flag) throws GameActionException {
+        return getBits(rc, ENEMY_FLAG_ID_START_INDEX + 12 * flag, 12);
     }
 
-    private static void setBits32(RobotController rc, int arrayIndex, int value) throws GameActionException {
-        rc.writeSharedArray(arrayIndex, value >>> 16);
-        rc.writeSharedArray(arrayIndex + 1, value & ((1 << 16) - 1));
+    private static void setEnemyFlagId(RobotController rc, int flag, int id) throws GameActionException {
+        setBits(rc, ENEMY_FLAG_ID_START_INDEX + 12 * flag, id, 12);
     }
 
-    private static int getBits9(RobotController rc, int bitIndex) throws GameActionException {
-        int arrayIndex = bitIndex / 16;
-        int bits = getBits32(rc, arrayIndex);
-        int shift = 32 - 9 - (bitIndex & ((1 << 16) - 1));
-        return (bits >>> shift) & 0b111111111;
-    }
-
-    private static void setBits9(RobotController rc, int bitIndex, int value) throws GameActionException {
-        int arrayIndex = bitIndex / 16;
-        int bits = getBits32(rc, arrayIndex);
-        int shift = 32 - 9 - (bitIndex & ((1 << 16) - 1));
-        int mask = 0b111111111 << shift;
-        int newBits = (bits & ~mask) | (value << shift);
-        setBits32(rc, arrayIndex, newBits);
-    }
-
-    private static int computeBitIndex(MapLocation loc) {
-        double zoneWidth = Constants.mapWidth * 0.1;
-        double zoneHeight = Constants.mapHeight * 0.1;
-        int zoneX = (int) Math.floor(loc.x / zoneWidth);
-        int zoneY = (int) Math.floor(loc.y / zoneHeight);
-        int zoneId = getZoneId(loc);
-        return ZONE_START_INDEX * 16 + zoneId * 9;
-    }
-
-    private static int getZoneBits(RobotController rc, MapLocation loc, int shift, int numBits) throws GameActionException {
-        int bitIndex = computeBitIndex(loc);
-        int bits = getBits9(rc, bitIndex);
-        return (bits >>> shift) & ((1 << numBits) - 1);
-    }
-
-    private static void setZoneBits(RobotController rc, MapLocation loc, int shift, int numBits, int value) throws GameActionException {
-        int bitIndex = computeBitIndex(loc);
-        int bits = getBits9(rc, bitIndex);
-        int mask = ((1 << numBits) - 1) << shift;
-        int newBits = (bits & ~mask) | (value << shift);
-        setBits9(rc, bitIndex, newBits);
-    }
-
-    // we only store an approximation to save bits
-    // the ranges are: 0, 1-2, 3-6, and 7+
-    public static int getZoneRobots(RobotController rc, MapLocation loc, Team team) throws GameActionException {
-        int shift = 5 + (rc.getTeam() == team ? 2 : 0);
-        int result = getZoneBits(rc, loc, shift, 2);
-        switch (result) {
-            case 0: return 0;
-            case 1: return 2;
-            case 2: return 5;
-            case 3: return 10;
-            default: throw new RuntimeException();
+    private static void reportEnemyFlag(RobotController rc, int flagId, MapLocation flagLoc) throws GameActionException {
+        for (int i = 0; i < 3; i++) {
+            int id = getEnemyFlagId(rc, i);
+            if (id == NULL_FLAG_ID || id == flagId) {
+                setFlagLocation(rc, rc.getTeam().opponent(), i, flagLoc);
+                setEnemyFlagId(rc, i, flagId);
+                break;
+            }
         }
+    }
+
+    public static void reportNearbyEnemyFlags(RobotController rc) throws GameActionException {
+        FlagInfo[] flags = rc.senseNearbyFlags(-1, rc.getTeam().opponent());
+        for (FlagInfo flag : flags) {
+            reportEnemyFlag(rc, flag.getID(), flag.getLocation());
+        }
+    }
+
+    public static void reportEnemyFlagCaptured(RobotController rc, int flagId) throws GameActionException {
+        reportEnemyFlag(rc, flagId, null);
+    }
+
+    private static int zoneBitIndex(MapLocation loc) {
+        int zoneId = ZoneInfo.getZoneId(loc);
+        return ZONE_START_INDEX + zoneId * 9;
     }
 
     private static int approximate(int num) {
@@ -166,16 +135,30 @@ public class Comms {
         else return 3;
     }
 
+    // we only store an approximation to save bits
+    // the ranges are: 0, 1-2, 3-6, and 7+
+    public static int getZoneRobots(RobotController rc, MapLocation loc, Team team) throws GameActionException {
+        int index = zoneBitIndex(loc) + (rc.getTeam() == team ? 0 : 2);
+        int result = getBits(rc, index, 2);
+        switch (result) {
+            case 0: return 0;
+            case 1: return 2;
+            case 2: return 5;
+            case 3: return 10;
+            default: throw new RuntimeException();
+        }
+    }
+
     public static void setZoneRobots(RobotController rc, MapLocation loc, Team team, int numRobots) throws GameActionException {
-        int shift = 5 + (rc.getTeam() == team ? 2 : 0);
+        int index = zoneBitIndex(loc) + (rc.getTeam() == team ? 0 : 2);
         int approx = approximate(numRobots);
-        setZoneBits(rc, loc, shift, 2, approx);
+        setBits(rc, index, approx, 2);
     }
 
     // again we only store an approximation
     // the ranges are the same as above
     public static int getZoneTraps(RobotController rc, MapLocation loc) throws GameActionException {
-        int result = getZoneBits(rc, loc, 3, 2);
+        int result = getBits(rc, zoneBitIndex(loc) + 4, 2);
         switch (result) {
             case 0: return 0;
             case 1: return 2;
@@ -187,16 +170,16 @@ public class Comms {
 
     public static void setZoneTraps(RobotController rc, MapLocation loc, int numTraps) throws GameActionException {
         int approx = approximate(numTraps);
-        setZoneBits(rc, loc, 3, 2, approx);
+        setBits(rc, zoneBitIndex(loc) + 4, approx, 2);
     }
 
     // timestamp approximation will be off by at most 250 turns
     public static int getZoneTimestamp(RobotController rc, MapLocation loc) throws GameActionException {
-        return getZoneBits(rc, loc, 0, 3) * 250;
+        return getBits(rc, zoneBitIndex(loc) + 6, 3) * 250;
     }
 
     public static void setZoneTimestamp(RobotController rc, MapLocation loc, int turnNum) throws GameActionException {
-        setZoneBits(rc, loc, 0, 3, turnNum / 250);
+        setBits(rc, zoneBitIndex(loc) + 6, turnNum / 250, 3);
     }
 
     public static void reportZoneInfo(RobotController rc) throws GameActionException {
@@ -213,15 +196,36 @@ public class Comms {
         setZoneTimestamp(rc, loc, rc.getRoundNum());
     }
 
-    public static void fetchZoneInfo(RobotController rc, int id) throws GameActionException {
+    public static void getZoneInfo(RobotController rc, int id) throws GameActionException {
 
     }
 
-    public static void getFlagID(RobotController rc) throws GameActionException {
-        Constants.ENEMY_FLAGS_ID = new Integer[]{rc.readSharedArray(61), rc.readSharedArray(62), rc.readSharedArray(63)};
+    private static int getBits32(RobotController rc, int arrayIndex) throws GameActionException {
+        int a = rc.readSharedArray(arrayIndex);
+        int b = rc.readSharedArray(arrayIndex + 1);
+        return (a << 16) + b;
     }
 
-    public static void setFlagID(RobotController rc, int id) throws GameActionException {
-        rc.writeSharedArray(61 + Constants.KNOWN_ENEMY_FLAGS, id);
+    private static void setBits32(RobotController rc, int arrayIndex, int value) throws GameActionException {
+        rc.writeSharedArray(arrayIndex, value >>> 16);
+        rc.writeSharedArray(arrayIndex + 1, value & ((1 << 16) - 1));
+    }
+
+    private static int getBits(RobotController rc, int bitIndex, int numBits) throws GameActionException {
+        if (numBits > 16) throw new RuntimeException();
+        int arrayIndex = bitIndex / 16;
+        int bits = getBits32(rc, arrayIndex);
+        int shift = 32 - numBits - (bitIndex % 16);
+        return (bits >>> shift) & ((1 << numBits) - 1);
+    }
+
+    private static void setBits(RobotController rc, int bitIndex, int value, int numBits) throws GameActionException {
+        if (numBits > 16) throw new RuntimeException();
+        int arrayIndex = bitIndex / 16;
+        int bits = getBits32(rc, arrayIndex);
+        int shift = 32 - numBits - (bitIndex % 16);
+        int mask = ((1 << numBits) - 1) << shift;
+        int newBits = (bits & ~mask) | (value << shift);
+        setBits32(rc, arrayIndex, newBits);
     }
 }
