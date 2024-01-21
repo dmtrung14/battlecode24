@@ -25,6 +25,7 @@ public class Comms {
         setBits(rc, SYM_INDEX, 0b111, 3);
         for (int i = 0; i < 3; i++) {
             setEnemyFlagId(rc, i, NULL_FLAG_ID);
+            setFlagLocation(rc, rc.getTeam().opponent(), i, null);
         }
     }
 
@@ -108,8 +109,8 @@ public class Comms {
         for (int i = 0; i < 3; i++) {
             int id = getEnemyFlagId(rc, i);
             if (id == NULL_FLAG_ID || id == flagId) {
-                setFlagLocation(rc, rc.getTeam().opponent(), i, flagLoc);
                 setEnemyFlagId(rc, i, flagId);
+                setFlagLocation(rc, rc.getTeam().opponent(), i, flagLoc);
                 break;
             }
         }
@@ -256,18 +257,33 @@ public class Comms {
     private static int getBits(RobotController rc, int bitIndex, int numBits) throws GameActionException {
         if (numBits > 16) throw new RuntimeException();
         int arrayIndex = bitIndex / 16;
-        int bits = getBits32(rc, arrayIndex);
-        int shift = 32 - numBits - (bitIndex % 16);
-        return (bits >>> shift) & ((1 << numBits) - 1);
+        if (arrayIndex == 63) {
+            int bits = rc.readSharedArray(arrayIndex);
+            int shift = 16 - numBits - (bitIndex % 16);
+            return (bits >>> shift) & ((1 << numBits) - 1);
+        } else {
+            int bits = getBits32(rc, arrayIndex);
+            int shift = 32 - numBits - (bitIndex % 16);
+            return (bits >>> shift) & ((1 << numBits) - 1);
+        }
     }
 
     private static void setBits(RobotController rc, int bitIndex, int value, int numBits) throws GameActionException {
         if (numBits > 16) throw new RuntimeException();
+        value &= ((1 << numBits) - 1);
         int arrayIndex = bitIndex / 16;
-        int bits = getBits32(rc, arrayIndex);
-        int shift = 32 - numBits - (bitIndex % 16);
-        int mask = ((1 << numBits) - 1) << shift;
-        int newBits = (bits & ~mask) | (value << shift);
-        setBits32(rc, arrayIndex, newBits);
+        if (arrayIndex == 63) {
+            int bits = rc.readSharedArray(arrayIndex);
+            int shift = 16 - numBits - (bitIndex % 16);
+            int mask = ((1 << numBits) - 1) << shift;
+            int newBits = (bits & ~mask) | (value << shift);
+            rc.writeSharedArray(arrayIndex, newBits);
+        } else {
+            int bits = getBits32(rc, arrayIndex);
+            int shift = 32 - numBits - (bitIndex % 16);
+            int mask = ((1 << numBits) - 1) << shift;
+            int newBits = (bits & ~mask) | (value << shift);
+            setBits32(rc, arrayIndex, newBits);
+        }
     }
 }

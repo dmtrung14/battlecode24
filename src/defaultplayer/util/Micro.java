@@ -52,14 +52,14 @@ public class Micro {
         MapLocation current = rc.getLocation();
         if (current.distanceSquaredTo(nearestEnemyLoc) <= 2) {
             // then attack, and walk out.
-            rc.attack(nearestEnemyLoc);
-            if (rc.getLevel(SkillType.ATTACK) == 6) {
+            if (rc.isActionReady()) rc.attack(nearestEnemyLoc);
+            if (rc.getLevel(SkillType.ATTACK) == 6 && rc.isActionReady()) {
                 rc.attack(nearestEnemyLoc);
             }
             retreat(rc, current.directionTo(nearestEnemyLoc).opposite());
         } else if (current.distanceSquaredTo(nearestEnemyLoc) <= 4 && rc.isActionReady()) {
             Pathfind.moveToward(rc, nearestEnemyLoc, false);
-            rc.attack(nearestEnemyLoc);
+            if (rc.isActionReady() && rc.canAttack(nearestEnemyLoc)) rc.attack(nearestEnemyLoc);
         }
         else if (current.distanceSquaredTo(nearestEnemyLoc) <= 8) {
             /* build stun trap so that we don't get hurt when we walk forward hopefully */
@@ -79,8 +79,8 @@ public class Micro {
         MapLocation nearestEnemyLoc = nearestEnemy.getLocation();
         MapLocation current = rc.getLocation();
         if (current.distanceSquaredTo(nearestEnemyLoc) <= 2) {
-            rc.attack(nearestEnemyLoc);
-            if (rc.getLevel(SkillType.ATTACK) == 6) {
+            if (rc.isActionReady()) rc.attack(nearestEnemyLoc);
+            if (rc.getLevel(SkillType.ATTACK) == 6 && rc.isActionReady()) {
                 rc.attack(nearestEnemyLoc);
             }
             retreat(rc, current.directionTo(nearestEnemyLoc).opposite());
@@ -101,8 +101,8 @@ public class Micro {
         MapLocation nearestEnemyLoc = nearestEnemy.getLocation();
         MapLocation current = rc.getLocation();
         if (current.distanceSquaredTo(nearestEnemyLoc) <= 2) {
-            rc.attack(nearestEnemyLoc);
-            if (rc.getLevel(SkillType.ATTACK) == 6) {
+            if (rc.isActionReady()) rc.attack(nearestEnemyLoc);
+            if (rc.getLevel(SkillType.ATTACK) == 6 && rc.isActionReady()) {
                 rc.attack(nearestEnemyLoc);
             }
             retreat(rc, current.directionTo(nearestEnemyLoc).opposite());
@@ -131,7 +131,9 @@ public class Micro {
     }
     public static void tryHeal(RobotController rc) throws GameActionException {
         if (!rc.isSpawned()) return;
-        if (rc.canHeal(weakestAlly(rc).getLocation())) rc.heal(weakestAlly(rc).getLocation());
+        RobotInfo weakest = weakestAlly(rc);
+        if (weakest == null) return;
+        if (rc.canHeal(weakest.getLocation())) rc.heal(weakest.getLocation());
     }
 
     public static void tryCaptureFlag(RobotController rc, Builder builder) throws GameActionException {
@@ -157,6 +159,16 @@ public class Micro {
                 }
             }
         }
+    }
+
+    public static void tryReturnFlag(RobotController rc) throws GameActionException {
+        Pathfind.moveToward(rc, nearestSpawnZone(rc), false);
+        MapInfo[] nearby = rc.senseNearbyMapInfos(2);
+        boolean isHome = false;
+        for (MapInfo location : nearby) {
+            if (location.getSpawnZoneTeamObject() == rc.getTeam()) isHome = true;
+        }
+        if (isHome) Comms.reportEnemyFlagCaptured(rc, myFlagLocalId(rc));
     }
 
     public static int toReturnAndGuard(RobotController rc) throws GameActionException {

@@ -4,8 +4,6 @@ import battlecode.common.*;
 
 import java.util.*;
 
-import static defaultplayer.util.CheckWrapper.isNearDam;
-
 
 public class Pathfind {
     private static MapLocation curTarget = null;
@@ -58,6 +56,7 @@ public class Pathfind {
 
     public static void moveToward(RobotController rc, MapLocation target, boolean fill) throws GameActionException {
         if (!rc.isSpawned()) return;
+        if (!rc.isMovementReady()) return;
         if (target != curTarget) {
             curTarget = target;
             goingAroundObstacle = false;
@@ -69,9 +68,12 @@ public class Pathfind {
             if (isPassable(rc, loc, fill)) {
                 if (rc.canFill(loc)) rc.fill(loc);
                 if (rc.canMove(dir)) rc.move(dir);
+                // if there's a robot, try to go around it
+                else if (rc.canMove(dir.rotateLeft())) rc.move(dir.rotateLeft());
+                else if (rc.canMove(dir.rotateRight())) rc.move(dir.rotateRight());
             } else {
                 goingAroundObstacle = true;
-                obstacleStartDistSquared = rc.getLocation().distanceSquaredTo(target);
+                obstacleStartDistSquared = current.distanceSquaredTo(target);
                 obstacleDir = dir;
             }
         }
@@ -80,11 +82,13 @@ public class Pathfind {
                 MapLocation loc = rc.getLocation().add(obstacleDir);
                 if (isPassable(rc, loc, fill)) {
                     if (rc.canFill(loc)) rc.fill(loc);
-                    if (rc.canMove(obstacleDir)) rc.move(obstacleDir);
-                    obstacleDir = obstacleDir.rotateRight().rotateRight();
+                    if (rc.canMove(obstacleDir)) {
+                        rc.move(obstacleDir);
+                        obstacleDir = obstacleDir.rotateRight().rotateRight();
+                    }
                     break;
                 } else {
-                    obstacleDir = obstacleDir.rotateLeft(); // this is probably what causes the bot to go in circle
+                    obstacleDir = obstacleDir.rotateLeft();
                 }
             }
             int distSquared = rc.getLocation().distanceSquaredTo(target);
@@ -95,9 +99,7 @@ public class Pathfind {
     }
 
     private static boolean isPassable(RobotController rc, MapLocation loc, boolean fill) throws GameActionException {
-        return rc.onTheMap(loc) &&
-                (rc.senseRobotAtLocation(loc) == null) &&
-                (rc.sensePassability(loc) || fill && rc.canFill(loc));
+        return rc.canSenseLocation(loc) && (rc.sensePassability(loc) || fill && rc.canFill(loc));
     }
 
     public static void bellmanFord(RobotController rc, MapLocation target) throws GameActionException {

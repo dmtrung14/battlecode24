@@ -42,6 +42,7 @@ public class Setup {
     }
 
     public void initializeStatic() throws GameActionException {
+        Comms.init(rc);
         Constants.mapWidth = rc.getMapWidth();
         Constants.mapHeight = rc.getMapHeight();
         Constants.myID = Comms.incrementAndGetId(rc);
@@ -52,14 +53,14 @@ public class Setup {
     }
 
     public void moveToGoal() throws GameActionException {
-        MapLocation flag = rc.senseNearbyFlags(-1, rc.getTeam())[0].getLocation();
         if (Constants.hasMovedFlag) return;
+        MapLocation flag = rc.senseNearbyFlags(-1, rc.getTeam())[0].getLocation();
         if (rc.canPickupFlag(flag)) {
             rc.pickupFlag(flag);
             Constants.hasMovedFlag = true;
         }
         MapLocation center = new MapLocation(Constants.mapWidth / 2, Constants.mapHeight / 2);
-        Queue<Integer> pastDistance = new LinkedList<Integer>();
+        Queue<Integer> pastDistance = new LinkedList<>();
         pastDistance.add(rc.getLocation().distanceSquaredTo(center));
         MapLocation[] nextLocation = Pathfind.avoid(rc, center, pastDistance.remove());
         while (nextLocation.length > 0 && rc.getRoundNum() <= Constants.FLAG_RUSH_ROUNDS) {
@@ -95,7 +96,7 @@ public class Setup {
 
     public void moveToCenter() throws GameActionException {
         MapLocation center = new MapLocation(Constants.mapWidth / 2, Constants.mapHeight / 2);
-        Queue<Integer> pastDistance = new LinkedList<Integer>();
+        Queue<Integer> pastDistance = new LinkedList<>();
         pastDistance.add(rc.getLocation().distanceSquaredTo(center));
         Direction lastDir = Direction.CENTER;
         MapLocation[] nextLocation = Pathfind.attract(rc, center, pastDistance.remove());
