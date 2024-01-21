@@ -2,7 +2,6 @@ package defaultplayer;
 
 import battlecode.common.*;
 
-import java.awt.*;
 import java.util.ArrayList;
 
 import defaultplayer.util.ZoneInfo;
@@ -91,7 +90,7 @@ public class Comms {
     public static void setFlagLocation(RobotController rc, Team team, int flag, MapLocation loc) throws GameActionException {
         int x = loc == null ? 61 : loc.x;
         int y = loc == null ? 61 : loc.y;
-        int index = (rc.getTeam() == team ? ALLY_FLAG_LOC_START_INDEX : ENEMY_FLAG_ID_START_INDEX) + 12 * flag;
+        int index = (rc.getTeam() == team ? ALLY_FLAG_LOC_START_INDEX : ENEMY_FLAG_LOC_START_INDEX) + 12 * flag;
         int value = (x << 6) + y;
         setBits(rc, index, value, 12);
     }
@@ -103,6 +102,15 @@ public class Comms {
 
     private static void setEnemyFlagId(RobotController rc, int flag, int id) throws GameActionException {
         setBits(rc, ENEMY_FLAG_ID_START_INDEX + 12 * flag, id, 12);
+    }
+
+    public static MapLocation[] getEnemyFlagLocations(RobotController rc) throws GameActionException {
+        ArrayList<MapLocation> locs = new ArrayList<>();
+        for (int i = 0; i < 3; i++) {
+            MapLocation loc = getFlagLocation(rc, rc.getTeam().opponent(), i);
+            if (loc != null) locs.add(loc);
+        }
+        return locs.toArray(new MapLocation[0]);
     }
 
     private static void reportEnemyFlag(RobotController rc, int flagId, MapLocation flagLoc) throws GameActionException {
@@ -127,16 +135,16 @@ public class Comms {
         reportEnemyFlag(rc, flagId, null);
     }
 
-    public static void updateEnemyFlagPing(RobotController rc) throws GameActionException {
-        MapLocation[] flagPings = rc.senseBroadcastFlagLocations();
-        for (int i = 0; i < 3; i++) {
-            if (i < flagPings.length) ENEMY_FLAGS_PING[i] = flagPings[i];
-            else {
-                System.out.println(Comms.getFlagLocation(rc, rc.getTeam().opponent(), 2 - i).toString());
-                ENEMY_FLAGS_PING[i] = Comms.getFlagLocation(rc, rc.getTeam().opponent(), 2 - i);
-            }
-        }
-    }
+//    public static void updateEnemyFlagPing(RobotController rc) throws GameActionException {
+//        MapLocation[] flagPings = rc.senseBroadcastFlagLocations();
+//        for (int i = 0; i < 3; i++) {
+//            if (i < flagPings.length) ENEMY_FLAGS_PING[i] = flagPings[i];
+//            else {
+//                System.out.println(Comms.getFlagLocation(rc, rc.getTeam().opponent(), 2 - i).toString());
+//                ENEMY_FLAGS_PING[i] = Comms.getFlagLocation(rc, rc.getTeam().opponent(), 2 - i);
+//            }
+//        }
+//    }
 
     private static int zoneBitIndex(MapLocation loc) {
         int zoneId = ZoneInfo.getZoneId(loc);

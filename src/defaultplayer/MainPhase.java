@@ -2,8 +2,6 @@ package defaultplayer;
 
 import battlecode.common.*;
 
-import java.util.*;
-
 import static defaultplayer.Constants.*;
 import static defaultplayer.util.CheckWrapper.*;
 import static defaultplayer.util.Micro.*;
@@ -30,13 +28,9 @@ public class MainPhase {
     public void tryUpdateInfo() throws GameActionException {
         if (!rc.isSpawned()) return;
         Comms.reportNearbyEnemyFlags(rc);
-        MapLocation[] flagPings = rc.senseBroadcastFlagLocations();
-        for (int i = 0; i < 3; i++) {
-            if (i < flagPings.length) ENEMY_FLAGS_PING[i] = flagPings[i];
-            else ENEMY_FLAGS_PING[i] = Comms.getFlagLocation(rc, rc.getTeam().opponent(), 2 - i);
-        }
+        ENEMY_FLAGS_PING = rc.senseBroadcastFlagLocations();
+        ENEMY_FLAGS_COMMS = Comms.getEnemyFlagLocations(rc);
     }
-
 
     public void run() throws GameActionException {
 //        if (rc.getRoundNum() > 400) rc.resign();

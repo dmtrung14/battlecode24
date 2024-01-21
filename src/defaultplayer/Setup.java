@@ -2,7 +2,6 @@ package defaultplayer;
 
 import battlecode.common.*;
 import defaultplayer.util.ZoneInfo;
-import scala.collection.immutable.Stream;
 
 import java.util.*;
 
@@ -11,7 +10,6 @@ import static defaultplayer.util.CheckWrapper.*;
 
 
 public class Setup {
-
     private final RobotController rc;
     private final Builder builder;
     private final Random rand;
@@ -48,8 +46,7 @@ public class Setup {
         Constants.myID = Comms.incrementAndGetId(rc);
         Constants.SPAWN_ZONES = rc.getAllySpawnLocations();
         Constants.RANDOM = new Random(Constants.myID);
-        for (int i = 0; i < 100; i ++ ) Constants.ZONE_INFO[i] = new ZoneInfo();
-        Comms.init(rc);
+        for (int i = 0; i < 100; i++) Constants.ZONE_INFO[i] = new ZoneInfo();
     }
 
     public void moveToGoal() throws GameActionException {

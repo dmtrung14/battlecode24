@@ -26,13 +26,22 @@ public class Optimizer {
         MapLocation nearest = null;
         MapLocation current = rc.getLocation();
 //        System.out.println(Integer.toString(rc.getRoundNum()).concat(Arrays.toString(ENEMY_FLAGS_PING)));
-        for (MapLocation ping : ENEMY_FLAGS_PING) {
-            if (ping != null && current.distanceSquaredTo(ping) < minDistance) {
-                nearest = ping;
-                minDistance = current.distanceSquaredTo(ping);
+        // prioritize reported comms flags over flag pings
+        for (MapLocation flag : ENEMY_FLAGS_COMMS) {
+            int distance = current.distanceSquaredTo(flag);
+            if (distance < minDistance) {
+                nearest = flag;
+                minDistance = distance;
             }
         }
-
+        if (nearest != null) return nearest;
+        for (MapLocation ping : ENEMY_FLAGS_PING) {
+            int distance = current.distanceSquaredTo(ping);
+            if (distance < minDistance) {
+                nearest = ping;
+                minDistance = distance;
+            }
+        }
         return nearest;
     }
 

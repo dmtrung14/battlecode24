@@ -18,7 +18,8 @@ public class Constants {
     public static final int FLAG_RUSH_ROUNDS = 60;
     public static int myID = 0;
 
-    public static final MapLocation[] ENEMY_FLAGS_PING = new MapLocation[3];
+    public static MapLocation[] ENEMY_FLAGS_PING;
+    public static MapLocation[] ENEMY_FLAGS_COMMS;
 
     public static final Direction[] DIRECTIONS = {
             Direction.NORTH,
