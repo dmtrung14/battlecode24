@@ -1,6 +1,8 @@
 package defaultplayer;
 
 import battlecode.common.*;
+import defaultplayer.util.ZoneInfo;
+import scala.collection.immutable.Stream;
 
 import java.util.*;
 
@@ -42,9 +44,10 @@ public class Setup {
     public void initializeStatic() throws GameActionException {
         Constants.mapWidth = rc.getMapWidth();
         Constants.mapHeight = rc.getMapHeight();
-        Constants.SPAWN_ZONES = rc.getAllySpawnLocations();
         Constants.myID = Comms.incrementAndGetId(rc);
+        Constants.SPAWN_ZONES = rc.getAllySpawnLocations();
         Constants.RANDOM = new Random(Constants.myID);
+        for (int i = 0; i < 100; i ++ ) Constants.ZONE_INFO[i] = new ZoneInfo();
         Comms.init(rc);
     }
 

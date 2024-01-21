@@ -2,9 +2,12 @@ package defaultplayer;
 
 import battlecode.common.*;
 
+import java.awt.*;
 import java.util.ArrayList;
 
 import defaultplayer.util.ZoneInfo;
+
+import static defaultplayer.Constants.ENEMY_FLAGS_PING;
 
 public class Comms {
     private static final int BOT_ID_INDEX = 0;
@@ -123,6 +126,17 @@ public class Comms {
         reportEnemyFlag(rc, flagId, null);
     }
 
+    public static void updateEnemyFlagPing(RobotController rc) throws GameActionException {
+        MapLocation[] flagPings = rc.senseBroadcastFlagLocations();
+        for (int i = 0; i < 3; i++) {
+            if (i < flagPings.length) ENEMY_FLAGS_PING[i] = flagPings[i];
+            else {
+                System.out.println(Comms.getFlagLocation(rc, rc.getTeam().opponent(), 2 - i).toString());
+                ENEMY_FLAGS_PING[i] = Comms.getFlagLocation(rc, rc.getTeam().opponent(), 2 - i);
+            }
+        }
+    }
+
     private static int zoneBitIndex(MapLocation loc) {
         int zoneId = ZoneInfo.getZoneId(loc);
         return ZONE_START_INDEX + zoneId * 9;
@@ -149,6 +163,18 @@ public class Comms {
         }
     }
 
+    public static int getZoneRobots(RobotController rc, int id, Team team) throws GameActionException {
+        int index = ZONE_START_INDEX + id * 9 + (rc.getTeam() == team ? 0 : 2);
+        int result = getBits(rc, index, 2);
+        switch (result) {
+            case 0: return 0;
+            case 1: return 2;
+            case 2: return 5;
+            case 3: return 10;
+            default: throw new RuntimeException();
+        }
+    }
+
     public static void setZoneRobots(RobotController rc, MapLocation loc, Team team, int numRobots) throws GameActionException {
         int index = zoneBitIndex(loc) + (rc.getTeam() == team ? 0 : 2);
         int approx = approximate(numRobots);
@@ -159,6 +185,17 @@ public class Comms {
     // the ranges are the same as above
     public static int getZoneTraps(RobotController rc, MapLocation loc) throws GameActionException {
         int result = getBits(rc, zoneBitIndex(loc) + 4, 2);
+        switch (result) {
+            case 0: return 0;
+            case 1: return 2;
+            case 2: return 5;
+            case 3: return 10;
+            default: throw new RuntimeException();
+        }
+    }
+
+    public static int getZoneTraps(RobotController rc, int id) throws GameActionException {
+        int result = getBits(rc, ZONE_START_INDEX + 9 * id + 4, 2);
         switch (result) {
             case 0: return 0;
             case 1: return 2;
@@ -196,8 +233,13 @@ public class Comms {
         setZoneTimestamp(rc, loc, rc.getRoundNum());
     }
 
-    public static void getZoneInfo(RobotController rc, int id) throws GameActionException {
-
+    public static void updateZoneInfo(RobotController rc, int id) throws GameActionException {
+        if (!rc.isSpawned()) return;
+        Constants.ZONE_INFO[id].setZoneInfo(
+                getZoneRobots(rc, id, rc.getTeam()),
+                getZoneRobots(rc, id, rc.getTeam().opponent()),
+                getZoneTraps(rc, id)
+        );
     }
 
     private static int getBits32(RobotController rc, int arrayIndex) throws GameActionException {

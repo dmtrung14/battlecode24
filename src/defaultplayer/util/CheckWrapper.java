@@ -48,16 +48,17 @@ public class CheckWrapper {
         return false;
     }
 
-    public static boolean isFlagDanger(RobotController rc) throws GameActionException {
-        return isBuilder() && rc.senseNearbyRobots(-1, rc.getTeam().opponent()).length > 0;
-    }
+//    public static boolean isFlagDanger(RobotController rc) throws GameActionException {
+//        return isBuilder() && rc.senseNearbyRobots(-1, rc.getTeam().opponent()).length > 0;
+//    }
 
-    public static boolean hasObjective(RobotController rc) throws GameActionException {
-        return isFlagDanger(rc) || nearestFlag(rc) != null;
-    }
+//    public static boolean hasObjective(RobotController rc) throws GameActionException {
+//        return isFlagDanger(rc) || nearestFlag(rc) != null;
+//    }
 
     public static boolean guardThisFlag(RobotController rc, int flag) {
         // TODO : Configure the logic for which robots to rush back when a flag is in danger
         return 4 + flag * 5 <= myID && myID < 9 + flag * 5;
     }
+
 }

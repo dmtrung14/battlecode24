@@ -100,7 +100,7 @@ public class Pathfind {
                 (rc.sensePassability(loc) || fill && rc.canFill(loc));
     }
 
-    private static void bellmanFord(RobotController rc, MapLocation target) throws GameActionException {
+    public static void bellmanFord(RobotController rc, MapLocation target) throws GameActionException {
         MapLocation start = rc.getLocation();
         int targetX = 3 + target.x - start.x;
         int targetY = 3 + target.y - start.y;
