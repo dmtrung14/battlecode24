@@ -111,4 +111,17 @@ public class Optimizer {
         }
         return weakest;
     }
+
+    public static RobotInfo weakestEnemy(RobotController rc) throws GameActionException {
+        if (!rc.isSpawned()) return null;
+        int minHealth = Integer.MAX_VALUE;
+        RobotInfo weakest = null;
+        for (RobotInfo robot : rc.senseNearbyRobots(4, rc.getTeam().opponent())) {
+            if (robot.getHealth() < minHealth) {
+                weakest = robot;
+                minHealth = robot.getHealth();
+            }
+        }
+        return weakest;
+    }
 }

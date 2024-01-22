@@ -31,6 +31,9 @@ public class CheckWrapper {
         return 4 <= myID;
     }
 
+    public static boolean isGuard() {
+        return 4 <= myID && myID <= 9;
+    }
     public static boolean isNearDam(RobotController rc) throws GameActionException {
         MapInfo[] nearby = rc.senseNearbyMapInfos(2);
         for (MapInfo mapInfo : nearby){

@@ -91,10 +91,11 @@ public class Setup {
 
     public void buildAroundFlags() throws GameActionException {
         MapLocation flagLoc = rc.getLocation();
-        MapInfo[] aroundFlag = rc.senseNearbyMapInfos(flagLoc, 5);
+        MapInfo[] aroundFlag = rc.senseNearbyMapInfos(flagLoc, 2);
         for (MapInfo a : aroundFlag) {
             if (a.isPassable() && !a.getMapLocation().equals(flagLoc)) {
-                if ((a.getMapLocation().x + a.getMapLocation().y) % 2 == 1) {
+                MapLocation loc = a.getMapLocation();
+                if ((loc.x + loc.y) % 2 == 1) {
                     builder.waitAndBuildTrapTurn(TrapType.STUN, a.getMapLocation(), 1);
                 } else {
                     builder.waitAndBuildTrapTurn(TrapType.EXPLOSIVE, a.getMapLocation(), 1);
@@ -115,9 +116,10 @@ public class Setup {
                 if (rc.canDig(site)
                         && (site.x + site.y) % 2 == 0) {
                     rc.dig(site);
-                } else if (rc.canBuild(TrapType.EXPLOSIVE, site)) {
-                    builder.waitAndBuildTrapTurn(TrapType.EXPLOSIVE, site, 2);
                 }
+//                else if (rc.canBuild(TrapType.EXPLOSIVE, site)) {
+//                    builder.waitAndBuildTrapTurn(TrapType.EXPLOSIVE, site, 2);
+//                }
             }
         }
         if (rc.getLocation().distanceSquaredTo(ourFlag) > radius) {
@@ -141,9 +143,8 @@ public class Setup {
             for (Direction d : dirs) {
                 MapLocation site = rc.getLocation().add(d);
                 if (rc.canDig(site)
-                        && (site.x + site.y) % 2 == 0
                         && site.distanceSquaredTo(flag) > 2
-                        && site.distanceSquaredTo(flag) < 60) {
+                        && site.distanceSquaredTo(flag) < 50) {
                     rc.dig(site);
                 }
             }
@@ -169,15 +170,15 @@ public class Setup {
         } else if (4 <= myID && myID <= 9) {
             ALLY_FLAGS = Comms.getAllyFlagLocations(rc);
             MapLocation myFlag = Constants.ALLY_FLAGS[(Constants.myID - 4)/2];
-            Pathfind.moveToward(rc, myFlag, false);
-            digLand2(myFlag);
+            Pathfind.moveToward(rc, myFlag, true);
+            if (rc.getRoundNum() > Constants.FLAG_RUSH_ROUNDS) digLand2(myFlag);
         } else if (isExplorer()) {
             if (rc.getRoundNum() <= Constants.EXPLORE_ROUNDS) Pathfind.explore(rc);
             else if (!isNearDam(rc)) {
                 Pathfind.moveToward(rc, nearestFlag(rc), true);
             }
             else {
-                Pathfind.moveToward(rc, nearestFlag(rc), true);
+                if (rc.canBuild(TrapType.STUN, rc.getLocation())) rc.build(TrapType.STUN, rc.getLocation());
             }
 
         }

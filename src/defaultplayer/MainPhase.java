@@ -32,17 +32,16 @@ public class MainPhase {
             Pathfind.moveToward(rc, ALLY_FLAGS[myID - 1], true);
             Comms.setFlagDanger(rc, myID - 1, isFlagInDanger(rc));
             if (isFlagInDanger(rc)) {
-//                    System.out.println(toAttack(rc));
                 tryAttack(rc);
             }
         }
+//        else if (isGuard()) {
+//            Pathfind.moveToward(rc, ALLY_FLAGS[(myID - 4)/2], true);
+//            tryAttack(rc);
+//        }
         else if (isExplorer()) {
             // TODO : Configure the logic for the order of attack, movement when flag is in danger.
             if (rc.hasFlag()) tryReturnFlag(rc);
-//            else if (flagInDanger(rc)) {
-//                int toGuard = toReturnAndGuard(rc);
-//                if (toGuard != (-1)) Pathfind.moveToward(rc, ALLY_FLAGS[toGuard], false);
-//            }
             else {
                 tryAttack(rc);
                 tryCaptureFlag(rc, builder);
