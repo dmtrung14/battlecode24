@@ -182,7 +182,8 @@ public class Setup {
         } else if (isExplorer()) {
             if (rc.getRoundNum() <= EXPLORE_ROUNDS) Pathfind.explore(rc);
             else if (!isNearDam(rc)) {
-                Pathfind.moveToward(rc, nearestFlag(rc), true);
+                MapLocation center = new MapLocation(mapWidth / 2, mapHeight / 2);
+                Pathfind.moveToward(rc, center, true);
             } else if (rc.canBuild(TrapType.STUN, rc.getLocation())) {
                 rc.build(TrapType.STUN, rc.getLocation());
             }

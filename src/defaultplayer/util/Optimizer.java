@@ -54,19 +54,15 @@ public class Optimizer {
 //            }
 //        }
 //        return nearest;
-        if (rc.getRoundNum() > GameConstants.SETUP_ROUNDS) {
-            MapLocation[] enemyFlags = new MapLocation[ENEMY_FLAGS_COMMS.length + ENEMY_FLAGS_PING.length];
-            for (int i = 0; i < enemyFlags.length; i++) {
-                if (i < ENEMY_FLAGS_COMMS.length) enemyFlags[i] = ENEMY_FLAGS_COMMS[i];
-                else enemyFlags[i] = ENEMY_FLAGS_PING[i - ENEMY_FLAGS_COMMS.length];
-            }
-//            if (myID < 10) return ALLY_FLAGS[myID % ALLY_FLAGS.length];
-            int toGuard = toReturnAndGuard(rc);
-            if (toGuard != -1) return ALLY_FLAGS[toGuard];
-            return enemyFlags.length > 0 ? enemyFlags[myID % enemyFlags.length] : null;
-        } else {
-            return (myID < 10) ? ALLY_FLAGS[myID % ALLY_FLAGS.length] : new MapLocation(mapWidth/2, mapHeight/2);
+        MapLocation[] enemyFlags = new MapLocation[ENEMY_FLAGS_COMMS.length + ENEMY_FLAGS_PING.length];
+        for (int i = 0; i < enemyFlags.length; i++) {
+            if (i < ENEMY_FLAGS_COMMS.length) enemyFlags[i] = ENEMY_FLAGS_COMMS[i];
+            else enemyFlags[i] = ENEMY_FLAGS_PING[i - ENEMY_FLAGS_COMMS.length];
         }
+//            if (myID < 10) return ALLY_FLAGS[myID % ALLY_FLAGS.length];
+        int toGuard = toReturnAndGuard(rc);
+        if (toGuard != -1) return ALLY_FLAGS[toGuard];
+        return enemyFlags.length > 0 ? enemyFlags[myID % enemyFlags.length] : null;
     }
 
     public static MapLocation nearbyFlagHolder(RobotController rc, FlagInfo[] flags, MapLocation loc) {

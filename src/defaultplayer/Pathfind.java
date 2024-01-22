@@ -71,7 +71,10 @@ public class Pathfind {
         Direction bestDir = bellmanFord(rc, target, fill);
         if (bestDir != null) {
             FlagInfo[] flags = rc.senseNearbyFlags(-1, rc.getTeam().opponent());
-            Direction[] dirs = { bestDir, bestDir.rotateLeft(), bestDir.rotateRight() };
+            int leftDist = rc.adjacentLocation(bestDir.rotateLeft().rotateLeft()).distanceSquaredTo(target);
+            int rightDist = rc.adjacentLocation(bestDir.rotateRight().rotateRight()).distanceSquaredTo(target);
+            Direction perpDir = leftDist < rightDist ? bestDir.rotateLeft().rotateLeft() : bestDir.rotateRight().rotateRight();
+            Direction[] dirs = { bestDir, bestDir.rotateLeft(), bestDir.rotateRight(), perpDir };
             for (Direction dir : dirs) {
                 if (fill && rc.canFill(rc.adjacentLocation(dir))) rc.fill(rc.adjacentLocation(dir));
                 if (rc.canMove(dir) && (rc.hasFlag() || nearbyFlagHolder(rc, flags, rc.adjacentLocation(dir)) == null)) {
