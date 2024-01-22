@@ -119,6 +119,15 @@ public class Comms {
         return locs.toArray(new MapLocation[0]);
     }
 
+    public static MapLocation[] getAllyFlagLocations(RobotController rc) throws GameActionException {
+        ArrayList<MapLocation> locs = new ArrayList<>();
+        for (int i = 0; i < 3; i++) {
+            MapLocation loc = getFlagLocation(rc, rc.getTeam(), i);
+            if (loc != null) locs.add(loc);
+        }
+        return locs.toArray(new MapLocation[0]);
+    }
+
     private static void reportEnemyFlag(RobotController rc, int flagId, MapLocation flagLoc) throws GameActionException {
         for (int i = 0; i < 3; i++) {
             int id = getEnemyFlagId(rc, i);

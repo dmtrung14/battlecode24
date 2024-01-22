@@ -2,6 +2,8 @@ package defaultplayer;
 
 import battlecode.common.*;
 
+import java.util.Arrays;
+
 import static defaultplayer.Constants.*;
 import static defaultplayer.util.CheckWrapper.*;
 import static defaultplayer.util.Micro.*;
@@ -18,20 +20,10 @@ public class MainPhase {
         this.builder = new Builder(rc);
     }
 
-    public void tryBuyGlobal() throws GameActionException {
-        if (rc.canBuyGlobal(GlobalUpgrade.ATTACK)) rc.buyGlobal(GlobalUpgrade.ATTACK);
-        else if (rc.canBuyGlobal(GlobalUpgrade.HEALING)) rc.buyGlobal(GlobalUpgrade.HEALING);
-        else if (rc.canBuyGlobal(GlobalUpgrade.CAPTURING)) rc.buyGlobal(GlobalUpgrade.CAPTURING);
-    }
-
-    public void tryUpdateInfo() throws GameActionException {
-        if (!rc.isSpawned()) return;
-        Comms.reportNearbyEnemyFlags(rc);
-        ENEMY_FLAGS_PING = rc.senseBroadcastFlagLocations();
-        ENEMY_FLAGS_COMMS = Comms.getEnemyFlagLocations(rc);
-    }
 
     public void run() throws GameActionException {
+        tryBuyGlobal(rc);
+        tryUpdateInfo(rc);
         if (!rc.isSpawned()) {
             setup.trySpawn();
             if (!rc.isSpawned()) return;
@@ -45,9 +37,6 @@ public class MainPhase {
             }
         }
         else if (isExplorer()) {
-            tryBuyGlobal();
-            tryUpdateInfo();
-
             // TODO : Configure the logic for the order of attack, movement when flag is in danger.
             if (rc.hasFlag()) tryReturnFlag(rc);
 //            else if (flagInDanger(rc)) {
@@ -67,6 +56,7 @@ public class MainPhase {
             }
 
             Comms.reportZoneInfo(rc);
+            rc.setIndicatorString(Integer.toString(myID));
         }
     }
 }

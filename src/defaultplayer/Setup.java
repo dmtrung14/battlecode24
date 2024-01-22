@@ -7,6 +7,7 @@ import java.util.*;
 
 import static defaultplayer.Constants.*;
 import static defaultplayer.util.CheckWrapper.*;
+import static defaultplayer.util.Optimizer.*;
 
 
 public class Setup {
@@ -131,7 +132,7 @@ public class Setup {
         }
     }
 
-    public void digLand2() throws GameActionException {
+    public void digLand2(MapLocation flag) throws GameActionException {
         if (!rc.isSpawned()) return;
         Direction[] dirs = Direction.allDirections();
         Direction dir = dirs[rand.nextInt(dirs.length)];
@@ -140,7 +141,9 @@ public class Setup {
             for (Direction d : dirs) {
                 MapLocation site = rc.getLocation().add(d);
                 if (rc.canDig(site)
-                        && (site.x + site.y) % 2 == 0) {
+                        && (site.x + site.y) % 2 == 0
+                        && site.distanceSquaredTo(flag) > 2
+                        && site.distanceSquaredTo(flag) < 60) {
                     rc.dig(site);
                 }
             }
@@ -155,22 +158,28 @@ public class Setup {
         if (isBuilder()) {
             if (rc.getRoundNum() <= Constants.FLAG_RUSH_ROUNDS) {
                 moveToGoal();
-            }
-            for (int i = 0; i < 3; i++) {
-                Constants.ALLY_FLAGS[i] = Comms.getFlagLocation(rc, rc.getTeam(), i);
+                Comms.setFlagLocation(rc, rc.getTeam(), myID - 1, rc.getLocation());
+                ALLY_FLAGS[Constants.myID - 1] = rc.getLocation();
             }
             if (!afterBuildTrap) {
                 buildAroundFlags();
             }
-            digLand(100);
+            digLand(40);
             Pathfind.moveToward(rc, Constants.ALLY_FLAGS[Constants.myID - 1], false);
-        } else if (myID >= 4 && myID <= 9) {
-            digLand2();
+        } else if (4 <= myID && myID <= 9) {
+            ALLY_FLAGS = Comms.getAllyFlagLocations(rc);
+            MapLocation myFlag = Constants.ALLY_FLAGS[(Constants.myID - 4)/2];
+            Pathfind.moveToward(rc, myFlag, false);
+            digLand2(myFlag);
         } else if (isExplorer()) {
             if (rc.getRoundNum() <= Constants.EXPLORE_ROUNDS) Pathfind.explore(rc);
             else if (!isNearDam(rc)) {
-                Pathfind.moveToward(rc, new MapLocation(mapWidth / 2, mapHeight / 2), true);
+                Pathfind.moveToward(rc, nearestFlag(rc), true);
             }
+            else {
+                Pathfind.moveToward(rc, nearestFlag(rc), true);
+            }
+
         }
     }
 }

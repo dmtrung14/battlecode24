@@ -7,6 +7,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 
 import static defaultplayer.Constants.*;
+import static defaultplayer.util.Micro.*;
 
 public class Optimizer {
     public static MapLocation[] sortSpawnZone(RobotController rc) {
@@ -31,7 +32,7 @@ public class Optimizer {
         return nearest;
     }
 
-    public static MapLocation nearestFlag(RobotController rc) {
+    public static MapLocation nearestFlag(RobotController rc) throws GameActionException {
         if (!rc.isSpawned()) return null;
 //        int minDistance = Integer.MAX_VALUE;
 //        MapLocation nearest = null;
@@ -53,13 +54,35 @@ public class Optimizer {
 //            }
 //        }
 //        return nearest;
+        if (rc.getRoundNum() > GameConstants.SETUP_ROUNDS) {
+            MapLocation[] enemyFlags = new MapLocation[ENEMY_FLAGS_COMMS.length + ENEMY_FLAGS_PING.length];
+            for (int i = 0; i < enemyFlags.length; i++) {
+                if (i < ENEMY_FLAGS_COMMS.length) enemyFlags[i] = ENEMY_FLAGS_COMMS[i];
+                else enemyFlags[i] = ENEMY_FLAGS_PING[i - ENEMY_FLAGS_COMMS.length];
+            }
+//            if (myID < 10) return ALLY_FLAGS[myID % ALLY_FLAGS.length];
+            if (toReturnAndGuard(rc) != (-1)) return ALLY_FLAGS[toReturnAndGuard(rc)];
 
-        MapLocation[] enemyFlags = new MapLocation[ENEMY_FLAGS_COMMS.length + ENEMY_FLAGS_PING.length];
-        for (int i = 0; i < enemyFlags.length; i++) {
-            if (i < ENEMY_FLAGS_COMMS.length) enemyFlags[i] = ENEMY_FLAGS_COMMS[i];
-            else enemyFlags[i] = ENEMY_FLAGS_PING[i - ENEMY_FLAGS_COMMS.length];
+            return enemyFlags.length > 0 ? enemyFlags[myID % enemyFlags.length] : null;
+        } else {
+            return (myID < 10) ? ALLY_FLAGS[myID % ALLY_FLAGS.length] : new MapLocation(mapWidth/2, mapHeight/2);
         }
-        return enemyFlags.length > 0 ? enemyFlags[myID % enemyFlags.length] : null;
+
+    }
+
+    public static MapLocation nearestAllyFlag(RobotController rc) {
+        int minDistance = Integer.MAX_VALUE;
+        MapLocation nearest = null;
+        MapLocation current = rc.getLocation();
+        // prioritize reported comms flags over flag pings
+        for (MapLocation flag : ALLY_FLAGS) {
+            int distance = current.distanceSquaredTo(flag);
+            if (distance < minDistance) {
+                nearest = flag;
+                minDistance = distance;
+            }
+        }
+        return nearest;
     }
 
     public static RobotInfo nearestEnemy(RobotController rc) throws GameActionException {

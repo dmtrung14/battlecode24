@@ -6,6 +6,10 @@ import defaultplayer.Comms;
 import defaultplayer.Constants;
 import defaultplayer.Pathfind;
 
+import java.awt.*;
+
+import static defaultplayer.Constants.*;
+import static defaultplayer.util.CheckWrapper.*;
 import static defaultplayer.util.Optimizer.*;
 
 public class Micro {
@@ -19,15 +23,15 @@ public class Micro {
 
         /* attack lv based on enemy dynamics */
         // TODO : get nearby enemies and allies with zoning rather than just senseNearbyRobots
-        RobotInfo[] nearbyEnemies = rc.senseNearbyRobots(10, rc.getTeam().opponent());
-        RobotInfo[] nearbyAllies = rc.senseNearbyRobots(10, rc.getTeam());
+        RobotInfo[] nearbyEnemies = rc.senseNearbyRobots(8, rc.getTeam().opponent());
+        RobotInfo[] nearbyAllies = rc.senseNearbyRobots(8, rc.getTeam());
         double allyScore = 0;
         double enemyScore = 0;
         for (RobotInfo ally : nearbyAllies) allyScore += (1 + ally.getHealth() * 0.002);
         for (RobotInfo enemy : nearbyEnemies) enemyScore += (1 + enemy.getHealth() * 0.002);
         double ratio = allyScore / enemyScore;
         if (ratio > 1.2) attackLv = 3;
-        else if (ratio > 1.1) attackLv = Math.max(attackLv, 2);
+        else if (ratio > 1.1 || nearbyEnemyHasFlag(rc)) attackLv = Math.max(attackLv, 2);
         else if (ratio > 1) attackLv = Math.max(attackLv, 1);
         else attackLv = Math.max(attackLv, 0);
 
@@ -35,9 +39,25 @@ public class Micro {
         return attackLv;
     }
 
-    public static void retreat(RobotController rc, Direction dir) throws GameActionException {
+    public static void retreat(RobotController rc) throws GameActionException {
         // TODO : handle which direction to retreat;
-        if (rc.canMove(dir)) rc.move(dir);
+        MapLocation current = rc.getLocation();
+        RobotInfo[] nearbyEnemies = rc.senseNearbyRobots(6, rc.getTeam().opponent());
+        RobotInfo bestEnemy = null;
+        double bestScore = 0;
+        for (RobotInfo enemy : nearbyEnemies) {
+            double enemyScore = enemy.getAttackLevel() + (double) enemy.getHealth() * 0.002;
+            if (enemyScore > bestScore) {
+                bestScore = enemyScore;
+                bestEnemy = enemy;
+            }
+        }
+        if (bestEnemy != null) {
+            Direction awayFromEnemy = current.directionTo(bestEnemy.getLocation()).opposite();
+            if (rc.canMove(awayFromEnemy)) rc.move(awayFromEnemy);
+            else if (rc.canMove(awayFromEnemy.rotateRight())) rc.move(awayFromEnemy.rotateRight());
+            else if (rc.canMove(awayFromEnemy.rotateLeft())) rc.move(awayFromEnemy.rotateLeft());
+        }
     }
 
     public static void attackLv3(RobotController rc) throws GameActionException {
@@ -51,7 +71,7 @@ public class Micro {
             if (rc.getLevel(SkillType.ATTACK) == 6 && rc.isActionReady() && rc.canAttack(nearestEnemyLoc)) {
                 rc.attack(nearestEnemyLoc);
             }
-            retreat(rc, current.directionTo(nearestEnemyLoc).opposite());
+            retreat(rc);
         } else if (current.distanceSquaredTo(nearestEnemyLoc) <= 4 && rc.isActionReady()) {
             Pathfind.moveToward(rc, nearestEnemyLoc, false);
             if (rc.isActionReady() && rc.canAttack(nearestEnemyLoc)) rc.attack(nearestEnemyLoc);
@@ -78,7 +98,7 @@ public class Micro {
             if (rc.getLevel(SkillType.ATTACK) == 6 && rc.isActionReady() && rc.canAttack(nearestEnemyLoc)) {
                 rc.attack(nearestEnemyLoc);
             }
-            retreat(rc, current.directionTo(nearestEnemyLoc).opposite());
+            retreat(rc);
         }
         else if (current.distanceSquaredTo(nearestEnemyLoc) <= 6) {
             Direction dirToEnemy = current.directionTo(nearestEnemyLoc);
@@ -100,14 +120,14 @@ public class Micro {
             if (rc.getLevel(SkillType.ATTACK) == 6 && rc.isActionReady() && rc.canAttack(nearestEnemyLoc)) {
                 rc.attack(nearestEnemyLoc);
             }
-            retreat(rc, current.directionTo(nearestEnemyLoc).opposite());
+            retreat(rc);
         }
         else if (current.distanceSquaredTo(nearestEnemyLoc) <= 4) {
             Direction dirToEnemy = current.directionTo(nearestEnemyLoc);
             if (rc.canBuild(TrapType.STUN, current.add(dirToEnemy))) rc.build(TrapType.STUN, current.add(dirToEnemy));
             if (rc.canBuild(TrapType.WATER, current.add(dirToEnemy.rotateLeft()))) rc.build(TrapType.WATER, current.add(dirToEnemy.rotateLeft()));
             else if (rc.canBuild(TrapType.WATER, current.add(dirToEnemy.rotateRight()))) rc.build(TrapType.WATER, current.add(dirToEnemy.rotateRight()));
-            retreat(rc, current.directionTo(nearestEnemyLoc).opposite());
+            retreat(rc);
         } else {
             tryHeal(rc);
         }
@@ -117,7 +137,7 @@ public class Micro {
         if (!rc.isSpawned()) return;
         int attackLv = toAttack(rc);
         switch (attackLv) {
-            case 0: retreat(rc, Direction.NORTH); break; //PLACEHOLDER
+            case 0: retreat(rc); break; //PLACEHOLDER
             case 1: attackLv1(rc); break;
             case 2: attackLv2(rc); break;
             case 3: attackLv3(rc); break;
@@ -135,12 +155,24 @@ public class Micro {
         if (!rc.isSpawned()) return;
         Comms.reportNearbyEnemyFlags(rc);
         FlagInfo[] flags = rc.senseNearbyFlags(-1, rc.getTeam().opponent());
-        if (flags.length > 0 && !flags[0].isPickedUp()){
-            Pathfind.moveToward(rc, flags[0].getLocation(), true);
-            if (rc.canPickupFlag(flags[0].getLocation())) rc.pickupFlag(flags[0].getLocation());
-        } else if (flags.length > 0 && flags[0].isPickedUp()) {
-            builder.clearWaterForFlag(flags[0].getLocation(), nearestSpawnZone(rc));
-            Pathfind.moveToward(rc, nearestSpawnZone(rc), true);
+//        if (flags.length > 0 && !flags[0].isPickedUp()){
+//            Pathfind.moveToward(rc, flags[0].getLocation(), true);
+//            if (rc.canPickupFlag(flags[0].getLocation())) rc.pickupFlag(flags[0].getLocation());
+//        } else if (flags.length > 0 && flags[0].isPickedUp()) {
+//            builder.clearWaterForFlag(flags[0].getLocation(), nearestSpawnZone(rc));
+//            Pathfind.moveToward(rc, nearestSpawnZone(rc), true);
+//        }
+        if (flags.length > 0) {
+            for (FlagInfo flag : flags) {
+                if (!flag.isPickedUp()) {
+                    Pathfind.moveToward(rc, flags[0].getLocation(), true);
+                    if (rc.canPickupFlag(flags[0].getLocation())) rc.pickupFlag(flags[0].getLocation());
+                }
+            }
+            if (!rc.hasFlag()) {
+                builder.clearWaterForFlag(flags[0].getLocation(), nearestSpawnZone(rc));
+                Pathfind.moveToward(rc, nearestSpawnZone(rc), true);
+            }
         }
     }
 
@@ -154,6 +186,21 @@ public class Micro {
         Pathfind.moveToward(rc, spawnZone, false);
     }
 
+    public static void tryBuyGlobal(RobotController rc) throws GameActionException {
+        if (rc.canBuyGlobal(GlobalUpgrade.ATTACK)) rc.buyGlobal(GlobalUpgrade.ATTACK);
+        else if (rc.canBuyGlobal(GlobalUpgrade.HEALING)) rc.buyGlobal(GlobalUpgrade.HEALING);
+        else if (rc.canBuyGlobal(GlobalUpgrade.CAPTURING)) rc.buyGlobal(GlobalUpgrade.CAPTURING);
+    }
+
+
+    public static void tryUpdateInfo(RobotController rc) throws GameActionException {
+        if (!rc.isSpawned()) return;
+        defaultplayer.Comms.reportNearbyEnemyFlags(rc);
+        ENEMY_FLAGS_PING = rc.senseBroadcastFlagLocations();
+        ENEMY_FLAGS_COMMS = Comms.getEnemyFlagLocations(rc);
+        ALLY_FLAGS = Comms.getAllyFlagLocations(rc);
+    }
+
     public static int toReturnAndGuard(RobotController rc) throws GameActionException {
         if (!rc.isSpawned()) return -1;
         int currentZone = ZoneInfo.getZoneId(rc.getLocation());
@@ -162,7 +209,8 @@ public class Micro {
         double balance = 0;
         for (int i = 0; i < 3; i ++ ) {
             if (Comms.isFlagInDanger(rc, i)) {
-                int flagZone = ZoneInfo.getZoneId(Constants.ALLY_FLAGS[i]);
+                double curBalance = 0;
+                int flagZone = ZoneInfo.getZoneId(ALLY_FLAGS[i]);
                 /* decide if we should rush back by checking all zones in between the current position
                 and the flag, plus the distance in case we have to go too far.
                  */
@@ -170,11 +218,14 @@ public class Micro {
                     if (Math.min(currentZone/10, flagZone/10) <= zone/10 && zone/10 <= Math.max(currentZone/10, flagZone/10) &&
                     Math.min(currentZone % 10, flagZone % 10) <= zone % 10 && zone % 10 <= Math.max(currentZone % 10, flagZone % 10)) {
 
-                        double curBalance = Constants.ZONE_INFO[zone].getAllies() - Constants.ZONE_INFO[zone].getEnemies() + 3 * rc.getLocation().distanceSquaredTo(Constants.ALLY_FLAGS[i]) / mapDiagonal;
-                        if (curBalance < balance) {
-                            guard = i;
-                            balance = curBalance;
-                        }
+                        curBalance = Constants.ZONE_INFO[zone].getAllies()
+                                - Constants.ZONE_INFO[zone].getEnemies();
+//                                + 3 * rc.getLocation().distanceSquaredTo(ALLY_FLAGS[i]) / mapDiagonal;
+
+                    }
+                    if (curBalance < balance) {
+                        guard = i;
+                        balance = curBalance;
                     }
                 }
             }

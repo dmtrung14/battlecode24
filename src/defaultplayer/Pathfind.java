@@ -166,6 +166,7 @@ public class Pathfind {
             cost--;
         }
 
+//        if (!rc.isSpawned()) return null;
         // there can be multiple fastest directions, so pick the one that minimizes distance to the target
         int minDist = Integer.MAX_VALUE;
         Direction minDir = null;
@@ -278,6 +279,9 @@ public class Pathfind {
             if (location.distanceSquaredTo(center) >= distanceSquared && !locInfo.isWall() && !locInfo.isDam()){
                 // check if current flag location is at least 6 from both the other 2 flags:
                 boolean valid = true;
+                for (MapInfo neighbor : rc.senseNearbyMapInfos(location, 2)) {
+                    if (neighbor.isDam()) valid = false;
+                }
                 for (int j = 0; j < 3; j ++ ){
                     if (j + 1 != Constants.myID && location.distanceSquaredTo(Comms.getFlagLocation(rc, rc.getTeam(), j)) < 36){
                         valid = false;

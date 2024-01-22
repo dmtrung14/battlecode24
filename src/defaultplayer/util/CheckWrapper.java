@@ -3,6 +3,8 @@ package defaultplayer.util;
 import battlecode.common.*;
 import defaultplayer.Comms;
 
+import java.awt.*;
+
 import static defaultplayer.Constants.*;
 import static defaultplayer.util.Optimizer.*;
 
@@ -52,6 +54,14 @@ public class CheckWrapper {
     }
     public static boolean flagInDanger(RobotController rc) throws GameActionException {
         return Comms.isFlagInDanger(rc, 0) || Comms.isFlagInDanger(rc, 1) || Comms.isFlagInDanger(rc, 2);
+    }
+
+    public static boolean nearbyEnemyHasFlag(RobotController rc) throws GameActionException {
+        RobotInfo[] nearbyEnemies = rc.senseNearbyRobots(10, rc.getTeam().opponent());
+        for (RobotInfo robot : nearbyEnemies) {
+            if (robot.hasFlag()) return true;
+        }
+        return false;
     }
 
 //    public static boolean hasObjective(RobotController rc) throws GameActionException {
