@@ -114,12 +114,12 @@ public class Setup {
                 if (rc.canDig(site)
                         && (site.x + site.y) % 2 == 0) {
                     rc.dig(site);
-                } else if (rc.canBuild(TrapType.WATER, site)) {
-                    builder.waitAndBuildTrapTurn(TrapType.WATER, site, 2);
+                } else if (rc.canBuild(TrapType.EXPLOSIVE, site)) {
+                    builder.waitAndBuildTrapTurn(TrapType.EXPLOSIVE, site, 2);
                 }
             }
         }
-        if (rc.getLocation().distanceSquaredTo(ourFlag) > 20) {
+        if (rc.getLocation().distanceSquaredTo(ourFlag) > radius) {
             dir = rc.getLocation().directionTo(ourFlag);
             if (rc.canMove(dir)) {
                 rc.move(dir);
@@ -127,6 +127,22 @@ public class Setup {
                 rc.move(dir.rotateRight());
             } else if (rc.canMove(dir.rotateLeft())) {
                 rc.move(dir.rotateLeft());
+            }
+        }
+    }
+
+    public void digLand2() throws GameActionException {
+        if (!rc.isSpawned()) return;
+        Direction[] dirs = Direction.allDirections();
+        Direction dir = dirs[rand.nextInt(dirs.length)];
+        while (rc.canMove(dir)) {
+            rc.move(dir);
+            for (Direction d : dirs) {
+                MapLocation site = rc.getLocation().add(d);
+                if (rc.canDig(site)
+                        && (site.x + site.y) % 2 == 0) {
+                    rc.dig(site);
+                }
             }
         }
     }
@@ -148,9 +164,11 @@ public class Setup {
             }
             digLand(100);
             Pathfind.moveToward(rc, Constants.ALLY_FLAGS[Constants.myID - 1], false);
+        } else if (myID >= 4 && myID <= 9) {
+            digLand2();
         } else if (isExplorer()) {
             if (rc.getRoundNum() <= Constants.EXPLORE_ROUNDS) Pathfind.explore(rc);
-            else if (!isNearDam(rc)){
+            else if (!isNearDam(rc)) {
                 Pathfind.moveToward(rc, new MapLocation(mapWidth / 2, mapHeight / 2), true);
             }
         }
