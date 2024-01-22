@@ -2,8 +2,6 @@ package defaultplayer;
 
 import battlecode.common.*;
 
-import java.util.Arrays;
-
 import static defaultplayer.Constants.*;
 import static defaultplayer.util.CheckWrapper.*;
 import static defaultplayer.util.Micro.*;
@@ -43,11 +41,13 @@ public class MainPhase {
             // TODO : Configure the logic for the order of attack, movement when flag is in danger.
             if (rc.hasFlag()) tryReturnFlag(rc);
             else {
+                tryMoveAwayFromFlagHolder(rc);
                 tryAttack(rc);
                 tryCaptureFlag(rc, builder);
                 if (!rc.isSpawned()) return;
                 tryHeal(rc);
-                if (nearestFlag(rc) != null) Pathfind.moveToward(rc, nearestFlag(rc), true);
+                MapLocation nearestFlag = nearestFlag(rc);
+                if (nearestFlag != null) Pathfind.moveToward(rc, nearestFlag, true);
                 else Pathfind.moveToward(rc, new MapLocation(mapWidth / 2, mapHeight / 2), true);
                 if (!rc.isSpawned()) return;
 
@@ -55,7 +55,7 @@ public class MainPhase {
             }
 
             Comms.reportZoneInfo(rc);
-            rc.setIndicatorString(Integer.toString(myID));
+//            rc.setIndicatorString(Integer.toString(myID));
         }
     }
 }

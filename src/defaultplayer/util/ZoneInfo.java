@@ -6,49 +6,49 @@ import defaultplayer.Constants;
 import java.util.*;
 
 public class ZoneInfo {
-    private int ADDRESS;
-    private int ALLIES;
-
-    private int ENEMIES;
-
-    private int TRAPS;
+    private int address;
+    private int allies;
+    private int enemies;
+    private boolean traps;
 
     public ZoneInfo() {
-        this.ALLIES = 0;
-        this.ENEMIES = 0;
-        this.TRAPS = 0;
+        this.allies = 0;
+        this.enemies = 0;
+        this.traps = false;
+    }
+
+    public int getAllies() {
+        return this.allies;
     }
 
     public int getEnemies() {
-        return this.ENEMIES;
-    }
-    public int getAllies() {
-        return this.ALLIES;
+        return this.enemies;
     }
 
-    public int getTraps() {
-        return this.TRAPS;
+    public boolean hasTraps() {
+        return this.traps;
     }
 
     public void setAddress(int address) {
-        this.ADDRESS = address;
+        this.address = address;
     }
 
     public void setAllies(int allies) {
-        this.ALLIES = allies;
+        this.allies = allies;
     }
 
     public void setEnemies(int enemies){
-        this.ENEMIES = enemies;
+        this.enemies = enemies;
     }
 
-    public void setTraps(int traps) {
-        this.TRAPS = traps;
+    public void setTraps(boolean traps) {
+        this.traps = traps;
     }
-    public void setZoneInfo(int allies, int enemies, int traps) {
-        this.ALLIES = allies;
-        this.ENEMIES = enemies;
-        this.TRAPS = traps;
+
+    public void setZoneInfo(int allies, int enemies, boolean traps) {
+        this.allies = allies;
+        this.enemies = enemies;
+        this.traps = traps;
     }
 
     public static int getZoneId(MapLocation location) {
@@ -64,7 +64,7 @@ public class ZoneInfo {
         int col = zoneID % 10;
 
         // Initialize empty list for neighbors
-        List<Integer> neighbors = new ArrayList<Integer>();
+        List<Integer> neighbors = new ArrayList<>();
 
         // Check all surrounding cells within the table bounds
         for (int i = row - 1; i <= row + 1; i++) {
@@ -80,6 +80,4 @@ public class ZoneInfo {
         Integer[] result = new Integer[neighbors.size()];
         return neighbors.toArray(result);
     }
-
-
 }

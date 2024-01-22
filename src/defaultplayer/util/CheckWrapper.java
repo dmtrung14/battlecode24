@@ -3,8 +3,6 @@ package defaultplayer.util;
 import battlecode.common.*;
 import defaultplayer.Comms;
 
-import java.awt.*;
-
 import static defaultplayer.Constants.*;
 import static defaultplayer.util.Optimizer.*;
 

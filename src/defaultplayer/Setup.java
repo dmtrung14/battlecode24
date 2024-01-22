@@ -15,7 +15,6 @@ public class Setup {
     private final Builder builder;
     private final Random rand;
     private boolean afterBuildTrap = false;
-    private MapLocation ourFlag;
 
     public Setup(RobotController rc) {
         this.rc = rc;
@@ -25,13 +24,13 @@ public class Setup {
 
     public void trySpawn() throws GameActionException {
         if (isBuilder()) {
-            MapLocation spawnPosition = SPAWN_ZONES[9 * (myID - 1) + 4];
+            MapLocation spawnPosition = SPAWN_ZONE_CENTERS[myID - 1];
             if (rc.canSpawn(spawnPosition)) rc.spawn(spawnPosition);
         } else {
             int randomZone = rand.nextInt(27);
             for (int i = 27; i >= 1; i--) {
-                if (rc.canSpawn(Constants.SPAWN_ZONES[(randomZone + i) % 27])) {
-                    rc.spawn(Constants.SPAWN_ZONES[(randomZone + i) % 27]);
+                if (rc.canSpawn(SPAWN_ZONES[(randomZone + i) % 27])) {
+                    rc.spawn(SPAWN_ZONES[(randomZone + i) % 27]);
                 }
             }
         }
@@ -39,51 +38,67 @@ public class Setup {
 
     public void initializeStatic() throws GameActionException {
         Comms.init(rc);
-        Constants.mapWidth = rc.getMapWidth();
-        Constants.mapHeight = rc.getMapHeight();
-        Constants.myID = Comms.incrementAndGetId(rc);
-        Constants.SPAWN_ZONES = rc.getAllySpawnLocations();
-        Constants.RANDOM = new Random(Constants.myID);
-        for (int i = 0; i < 100; i++) Constants.ZONE_INFO[i] = new ZoneInfo();
-    }
-
-    public void moveToGoal() throws GameActionException {
-        if (Constants.hasMovedFlag) return;
-        MapLocation flag = rc.senseNearbyFlags(-1, rc.getTeam())[0].getLocation();
-        if (rc.canPickupFlag(flag)) {
-            rc.pickupFlag(flag);
-            Constants.hasMovedFlag = true;
-        }
-        MapLocation center = new MapLocation(Constants.mapWidth / 2, Constants.mapHeight / 2);
-        Queue<Integer> pastDistance = new LinkedList<>();
-        pastDistance.add(rc.getLocation().distanceSquaredTo(center));
-        MapLocation[] nextLocation = Pathfind.avoid(rc, center, pastDistance.remove());
-        while (nextLocation.length > 0 && rc.getRoundNum() <= Constants.FLAG_RUSH_ROUNDS) {
-            pastDistance.add(rc.getLocation().distanceSquaredTo(center));
-            for (int i = 0; i < nextLocation.length; i++) {
-                Direction dir = rc.getLocation().directionTo(nextLocation[i]);
-                if (rc.canMove(dir)) {
-                    rc.move(dir);
+        mapWidth = rc.getMapWidth();
+        mapHeight = rc.getMapHeight();
+        myID = Comms.incrementAndGetId(rc);
+        SPAWN_ZONES = rc.getAllySpawnLocations();
+        SPAWN_ZONE_CENTERS = new MapLocation[3];
+        int numCenters = 0;
+        for (MapLocation loc : SPAWN_ZONES) {
+            boolean isCenter = true;
+            for (Direction dir : Direction.cardinalDirections()) {
+                if (!contains(SPAWN_ZONES, loc.add(dir))) {
+                    isCenter = false;
                     break;
-                } else if (rc.canFill(nextLocation[i])) {
-                    rc.dropFlag(rc.getLocation());
-                    rc.fill(nextLocation[i]);
-                    rc.pickupFlag(rc.getLocation());
-                    rc.move(dir);
-                    break;
-                }
-                if (i == (nextLocation.length - 1) && rc.getRoundNum() < Constants.FLAG_RUSH_ROUNDS) {
-                    i = -1;
-                    Clock.yield();
                 }
             }
-            Comms.setFlagLocation(rc, rc.getTeam(), Constants.myID - 1, rc.getLocation());
-            nextLocation = Pathfind.avoid(rc, center, pastDistance.remove());
+            if (isCenter) {
+                SPAWN_ZONE_CENTERS[numCenters] = loc;
+                numCenters++;
+            }
+        }
+        RANDOM = new Random(myID);
+        for (int i = 0; i < 100; i++) ZONE_INFO[i] = new ZoneInfo();
+    }
+
+    public void moveFlag() throws GameActionException {
+        MapLocation flag = rc.senseNearbyFlags(2, rc.getTeam())[0].getLocation();
+        if (rc.canPickupFlag(flag)) {
+            rc.pickupFlag(flag);
+        }
+        MapLocation center = new MapLocation(mapWidth / 2, mapHeight / 2);
+        while (rc.getRoundNum() <= FLAG_RUSH_ROUNDS) {
+            while (!rc.isMovementReady()) Clock.yield();
+            Direction dir = rc.getLocation().directionTo(center).opposite();
+            int leftDist = rc.adjacentLocation(dir.rotateLeft().rotateLeft()).distanceSquaredTo(center);
+            int rightDist = rc.adjacentLocation(dir.rotateRight().rotateRight()).distanceSquaredTo(center);
+            Direction[] dirs = {
+                    dir,
+                    dir.rotateLeft(),
+                    dir.rotateRight(),
+                    leftDist < rightDist ? dir.rotateLeft().rotateLeft() : dir.rotateRight().rotateRight()
+            };
+            dirLoop: for (Direction d : dirs) {
+                MapLocation loc = rc.adjacentLocation(d);
+                for (MapInfo neighbor : rc.senseNearbyMapInfos(loc, 2)) {
+                    if (neighbor.isDam()) continue dirLoop;
+                }
+                // check if current flag location is at least 6 from both the other 2 flags
+                for (int j = 0; j < 3; j++) {
+                    if (j + 1 != Constants.myID && loc.distanceSquaredTo(Comms.getFlagLocation(rc, rc.getTeam(), j)) < 36){
+                        continue dirLoop;
+                    }
+                }
+                if (rc.canMove(d)) {
+                    rc.move(d);
+                    Comms.setFlagLocation(rc, rc.getTeam(), myID - 1, rc.getLocation());
+                    ALLY_FLAGS[myID - 1] = rc.getLocation();
+                }
+            }
         }
         while (rc.hasFlag()) {
             if (rc.canDropFlag(rc.getLocation())) {
                 rc.dropFlag(rc.getLocation());
-                ourFlag = rc.getLocation();
             }
             Clock.yield();
         }
@@ -109,10 +124,11 @@ public class Setup {
         if (!rc.isSpawned()) return;
         Direction[] dirs = Direction.allDirections();
         Direction dir = dirs[rand.nextInt(dirs.length)];
-        while (rc.canMove(dir) && rc.getLocation().distanceSquaredTo(ourFlag) <= radius) {
+        MapLocation myFlag = ALLY_FLAGS[myID - 1];
+        while (rc.canMove(dir) && rc.getLocation().distanceSquaredTo(myFlag) <= radius) {
             rc.move(dir);
             for (Direction d : dirs) {
-                MapLocation site = rc.getLocation().add(d);
+                MapLocation site = rc.adjacentLocation(d);
                 if (rc.canDig(site)
                         && (site.x + site.y) % 2 == 0) {
                     rc.dig(site);
@@ -122,15 +138,8 @@ public class Setup {
 //                }
             }
         }
-        if (rc.getLocation().distanceSquaredTo(ourFlag) > radius) {
-            dir = rc.getLocation().directionTo(ourFlag);
-            if (rc.canMove(dir)) {
-                rc.move(dir);
-            } else if (rc.canMove(dir.rotateRight())) {
-                rc.move(dir.rotateRight());
-            } else if (rc.canMove(dir.rotateLeft())) {
-                rc.move(dir.rotateLeft());
-            }
+        if (rc.getLocation().distanceSquaredTo(myFlag) > radius) {
+            Pathfind.moveToward(rc, myFlag, false);
         }
     }
 
@@ -157,30 +166,26 @@ public class Setup {
             if (!rc.isSpawned()) return;
         }
         if (isBuilder()) {
-            if (rc.getRoundNum() <= Constants.FLAG_RUSH_ROUNDS) {
-                moveToGoal();
-                Comms.setFlagLocation(rc, rc.getTeam(), myID - 1, rc.getLocation());
-                ALLY_FLAGS[Constants.myID - 1] = rc.getLocation();
+            if (rc.getRoundNum() <= FLAG_RUSH_ROUNDS) {
+                moveFlag();
             }
             if (!afterBuildTrap) {
                 buildAroundFlags();
             }
             digLand(40);
-            Pathfind.moveToward(rc, Constants.ALLY_FLAGS[Constants.myID - 1], false);
+            Pathfind.moveToward(rc, ALLY_FLAGS[myID - 1], false);
         } else if (4 <= myID && myID <= 9) {
             ALLY_FLAGS = Comms.getAllyFlagLocations(rc);
-            MapLocation myFlag = Constants.ALLY_FLAGS[(Constants.myID - 4)/2];
+            MapLocation myFlag = ALLY_FLAGS[(myID - 4) / 2];
             Pathfind.moveToward(rc, myFlag, true);
-            if (rc.getRoundNum() > Constants.FLAG_RUSH_ROUNDS) digLand2(myFlag);
+            if (rc.getRoundNum() > FLAG_RUSH_ROUNDS) digLand2(myFlag);
         } else if (isExplorer()) {
-            if (rc.getRoundNum() <= Constants.EXPLORE_ROUNDS) Pathfind.explore(rc);
+            if (rc.getRoundNum() <= EXPLORE_ROUNDS) Pathfind.explore(rc);
             else if (!isNearDam(rc)) {
                 Pathfind.moveToward(rc, nearestFlag(rc), true);
+            } else if (rc.canBuild(TrapType.STUN, rc.getLocation())) {
+                rc.build(TrapType.STUN, rc.getLocation());
             }
-            else {
-                if (rc.canBuild(TrapType.STUN, rc.getLocation())) rc.build(TrapType.STUN, rc.getLocation());
-            }
-
         }
     }
 }

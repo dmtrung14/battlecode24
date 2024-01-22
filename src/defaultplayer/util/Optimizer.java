@@ -61,13 +61,21 @@ public class Optimizer {
                 else enemyFlags[i] = ENEMY_FLAGS_PING[i - ENEMY_FLAGS_COMMS.length];
             }
 //            if (myID < 10) return ALLY_FLAGS[myID % ALLY_FLAGS.length];
-            if (toReturnAndGuard(rc) != (-1)) return ALLY_FLAGS[toReturnAndGuard(rc)];
-
+            int toGuard = toReturnAndGuard(rc);
+            if (toGuard != -1) return ALLY_FLAGS[toGuard];
             return enemyFlags.length > 0 ? enemyFlags[myID % enemyFlags.length] : null;
         } else {
             return (myID < 10) ? ALLY_FLAGS[myID % ALLY_FLAGS.length] : new MapLocation(mapWidth/2, mapHeight/2);
         }
+    }
 
+    public static MapLocation nearbyFlagHolder(RobotController rc, FlagInfo[] flags, MapLocation loc) {
+        for (FlagInfo flag : flags) {
+            if (flag.isPickedUp() && flag.getTeam() == rc.getTeam().opponent() && flag.getLocation().isAdjacentTo(loc)) {
+                return flag.getLocation();
+            }
+        }
+        return null;
     }
 
     public static MapLocation nearestAllyFlag(RobotController rc) {

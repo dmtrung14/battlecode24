@@ -5,18 +5,20 @@ import battlecode.common.*;
 import defaultplayer.util.ZoneInfo;
 
 public class Constants {
+    public static int myID = 0;
+
     public static int mapWidth;
     public static int mapHeight;
 
     public static final Integer[] BUILDERS = {1, 2, 3};
 
-    public static MapLocation[] ALLY_FLAGS = new MapLocation[3];
     public static MapLocation[] SPAWN_ZONES;
-    public static final int EXPLORE_ROUNDS = 150;
+    public static MapLocation[] SPAWN_ZONE_CENTERS;
 
     public static final int FLAG_RUSH_ROUNDS = 100;
-    public static int myID = 0;
+    public static final int EXPLORE_ROUNDS = 150;
 
+    public static MapLocation[] ALLY_FLAGS = new MapLocation[3];
     public static MapLocation[] ENEMY_FLAGS_PING;
     public static MapLocation[] ENEMY_FLAGS_COMMS;
 
@@ -32,7 +34,6 @@ public class Constants {
     };
 
     public static Random RANDOM;
-    public static boolean hasMovedFlag = false;
 
     public static ZoneInfo[] ZONE_INFO = new ZoneInfo[100];
 }

@@ -6,8 +6,6 @@ import defaultplayer.Comms;
 import defaultplayer.Constants;
 import defaultplayer.Pathfind;
 
-import java.awt.*;
-
 import static defaultplayer.Constants.*;
 import static defaultplayer.util.CheckWrapper.*;
 import static defaultplayer.util.Optimizer.*;
@@ -34,7 +32,6 @@ public class Micro {
         else if (ratio > 1 || nearbyEnemyHasFlag(rc)) attackLv = Math.max(attackLv, 2);
         else if (ratio > 0.8) attackLv = Math.max(attackLv, 1);
         else attackLv = Math.max(attackLv, 0);
-
 
         return attackLv;
     }
@@ -153,9 +150,14 @@ public class Micro {
         if (rc.canHeal(weakest.getLocation())) rc.heal(weakest.getLocation());
     }
 
+    public static void tryMoveAwayFromFlagHolder(RobotController rc) throws GameActionException {
+        FlagInfo[] flags = rc.senseNearbyFlags(2);
+        MapLocation flagHolder = nearbyFlagHolder(rc, flags, rc.getLocation());
+        if (flagHolder != null) Pathfind.moveAwayFrom(rc, flagHolder);
+    }
+
     public static void tryCaptureFlag(RobotController rc, Builder builder) throws GameActionException {
         if (!rc.isSpawned()) return;
-        Comms.reportNearbyEnemyFlags(rc);
         FlagInfo[] flags = rc.senseNearbyFlags(-1, rc.getTeam().opponent());
 //        if (flags.length > 0 && !flags[0].isPickedUp()){
 //            Pathfind.moveToward(rc, flags[0].getLocation(), true);
@@ -197,7 +199,8 @@ public class Micro {
 
     public static void tryUpdateInfo(RobotController rc) throws GameActionException {
         if (!rc.isSpawned()) return;
-        defaultplayer.Comms.reportNearbyEnemyFlags(rc);
+        if (myID == 1 && rc.getRoundNum() % 200 == 0) Comms.resetZoneInfo(rc);
+        Comms.reportNearbyEnemyFlags(rc);
         ENEMY_FLAGS_PING = rc.senseBroadcastFlagLocations();
         ENEMY_FLAGS_COMMS = Comms.getEnemyFlagLocations(rc);
         ALLY_FLAGS = Comms.getAllyFlagLocations(rc);
@@ -206,28 +209,29 @@ public class Micro {
     public static int toReturnAndGuard(RobotController rc) throws GameActionException {
         if (!rc.isSpawned()) return -1;
         int currentZone = ZoneInfo.getZoneId(rc.getLocation());
+        int currentZoneX = currentZone / 10;
+        int currentZoneY = currentZone % 10;
         int guard = -1;
-        double mapDiagonal = (new MapLocation(0,0)).distanceSquaredTo((new MapLocation(Constants.mapWidth -1, Constants.mapHeight - 1)));
-        double balance = 0;
+//        double mapDiagonal = (new MapLocation(0,0)).distanceSquaredTo((new MapLocation(Constants.mapWidth -1, Constants.mapHeight - 1)));
+        double minBalance = 0;
         for (int i = 0; i < 3; i ++ ) {
             if (Comms.isFlagInDanger(rc, i)) {
-                double curBalance = 0;
                 int flagZone = ZoneInfo.getZoneId(ALLY_FLAGS[i]);
+                int flagZoneX = flagZone / 10;
+                int flagZoneY = flagZone % 10;
                 /* decide if we should rush back by checking all zones in between the current position
                 and the flag, plus the distance in case we have to go too far.
                  */
-                for (int zone = 0 ; zone < 100; zone ++ ) {
-                    if (Math.min(currentZone/10, flagZone/10) <= zone/10 && zone/10 <= Math.max(currentZone/10, flagZone/10) &&
-                    Math.min(currentZone % 10, flagZone % 10) <= zone % 10 && zone % 10 <= Math.max(currentZone % 10, flagZone % 10)) {
-
-                        curBalance = Constants.ZONE_INFO[zone].getAllies()
+                for (int zoneX = Math.min(currentZoneX, flagZoneX); zoneX <= Math.max(currentZoneX, flagZoneX); zoneX++) {
+                    for (int zoneY = Math.min(currentZoneX, flagZoneX); zoneY <= Math.max(currentZoneY, flagZoneY); zoneY++) {
+                        int zone = 10 * zoneX + zoneY;
+                        double balance = Constants.ZONE_INFO[zone].getAllies()
                                 - Constants.ZONE_INFO[zone].getEnemies();
 //                                + 3 * rc.getLocation().distanceSquaredTo(ALLY_FLAGS[i]) / mapDiagonal;
-
-                    }
-                    if (curBalance < balance) {
-                        guard = i;
-                        balance = curBalance;
+                        if (balance < minBalance) {
+                            minBalance = balance;
+                            guard = i;
+                        }
                     }
                 }
             }

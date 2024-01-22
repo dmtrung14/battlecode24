@@ -2,7 +2,7 @@ package defaultplayer;
 
 import battlecode.common.*;
 
-import java.util.*;
+import static defaultplayer.util.Optimizer.nearbyFlagHolder;
 
 
 public class Pathfind {
@@ -50,8 +50,12 @@ public class Pathfind {
         }
     }
 
+    private static Direction randomDir() {
+        return Constants.DIRECTIONS[Constants.RANDOM.nextInt(8)];
+    }
+
     private static void moveRandomly(RobotController rc) throws GameActionException {
-        Direction dir = Constants.DIRECTIONS[Constants.RANDOM.nextInt(8)];
+        Direction dir = randomDir();
         if (rc.canMove(dir)) rc.move(dir);
     }
 
@@ -59,22 +63,32 @@ public class Pathfind {
         if (!rc.isSpawned()) return;
         if (!rc.isMovementReady()) return;
         if (rc.getLocation().equals(target)) return;
-        if (target != curTarget) {
+        if (!target.equals(curTarget)) {
             curTarget = target;
             goingAroundObstacle = false;
         }
         rc.setIndicatorDot(target, 255, 0, 0);
-        Direction dir = bellmanFord(rc, target, fill);
-        if (dir != null) {
-            if (fill && rc.canFill(rc.adjacentLocation(dir))) rc.fill(rc.adjacentLocation(dir));
-            if (rc.canMove(dir)) rc.move(dir);
-            else if (rc.canMove(dir.rotateLeft())) rc.move(dir.rotateLeft());
-            else if (rc.canMove(dir.rotateRight())) rc.move(dir.rotateRight());
-            rc.setIndicatorString("BF");
+        Direction bestDir = bellmanFord(rc, target, fill);
+        if (bestDir != null) {
+            FlagInfo[] flags = rc.senseNearbyFlags(-1, rc.getTeam().opponent());
+            Direction[] dirs = { bestDir, bestDir.rotateLeft(), bestDir.rotateRight() };
+            for (Direction dir : dirs) {
+                if (fill && rc.canFill(rc.adjacentLocation(dir))) rc.fill(rc.adjacentLocation(dir));
+                if (rc.canMove(dir) && (rc.hasFlag() || nearbyFlagHolder(rc, flags, rc.adjacentLocation(dir)) == null)) {
+                    rc.move(dir);
+                    break;
+                }
+            }
         } else {
             bugNav(rc, target, fill);
-            rc.setIndicatorString("BUG NAV: " + goingAroundObstacle);
         }
+    }
+
+    public static void moveAwayFrom(RobotController rc, MapLocation target) throws GameActionException {
+        Direction dir = rc.getLocation().directionTo(target).opposite();
+        if (rc.canMove(dir)) rc.move(dir);
+        else if (rc.canMove(dir.rotateLeft())) rc.move(dir.rotateLeft());
+        else if (rc.canMove(dir.rotateRight())) rc.move(dir.rotateRight());
     }
 
     private static boolean isPassable(RobotController rc, MapLocation loc, boolean fill) throws GameActionException {
@@ -89,7 +103,7 @@ public class Pathfind {
             Direction dir = current.directionTo(target);
             MapLocation loc = current.add(dir);
             if (isPassable(rc, loc, fill)) {
-                if (fill && rc.canFill(rc.adjacentLocation(dir))) rc.fill(rc.adjacentLocation(dir));
+                if (fill && rc.canFill(loc)) rc.fill(loc);
                 if (rc.canMove(dir)) rc.move(dir);
                 // if there is a robot in the way, try to go around it
                 else if (rc.canMove(dir.rotateLeft())) rc.move(dir.rotateLeft());
@@ -152,11 +166,11 @@ public class Pathfind {
         int x = 3 + target.x - start.x;
         int y = 3 + target.y - start.y;
         if (x >= 0 && x < 8 && y >= 0 && y < 8) {
+            // if target is within vision range, try to move toward it
             targetBit = coordsToBit(x, y);
         } else {
-            // use a heuristic to find the best square on the vision boundary to move to
+            // use a heuristic to pick a square on the vision boundary to move to
             targetBit = findBestTarget(reachable, start, target);
-//            return null;
         }
 
         if (!isReachable(reachable, targetBit)) return null;
@@ -166,7 +180,6 @@ public class Pathfind {
             cost--;
         }
 
-//        if (!rc.isSpawned()) return null;
         // there can be multiple fastest directions, so pick the one that minimizes distance to the target
         int minDist = Integer.MAX_VALUE;
         Direction minDir = null;
@@ -249,50 +262,50 @@ public class Pathfind {
         return new MapLocation(start.x + x - 3, start.y + y - 3);
     }
 
-    public static MapLocation[] avoid(RobotController rc, MapLocation center, int distanceSquared) throws GameActionException {
-        ArrayList<MapLocation> possibleMoves = new ArrayList<>();
-        Comparator<MapLocation> comparator = (a, b) -> {
-            // sort in reverse order of distance
-            MapLocation current = rc.getLocation();
-            int minDistanceToOtherA = Integer.MAX_VALUE;
-            int minDistanceToOtherB = Integer.MAX_VALUE;
-            for (int j = 0; j < 3; j ++ ){
-                try {
-                    MapLocation flag = Comms.getFlagLocation(rc, rc.getTeam(), j);
-                    if (j + 1 != Constants.myID && current.distanceSquaredTo(flag) < minDistanceToOtherA) {
-                        minDistanceToOtherA = a.distanceSquaredTo(flag);
-                    }
-                    if (j + 1 != Constants.myID && current.distanceSquaredTo(flag) < minDistanceToOtherB) {
-                        minDistanceToOtherB = b.distanceSquaredTo(flag);
-                    }
-                } catch (GameActionException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-            if (a.equals(current.add(current.directionTo(center).opposite()))) return -1;
-            else if (b.equals(current.add(current.directionTo(center).opposite()))) return 1;
-            else if (minDistanceToOtherA != minDistanceToOtherB) return Integer.compare(minDistanceToOtherA, minDistanceToOtherB);
-            else return Integer.compare(b.distanceSquaredTo(center), a.distanceSquaredTo(center));
-        };
-        for (MapInfo locInfo : rc.senseNearbyMapInfos(2)){
-            MapLocation location = locInfo.getMapLocation();
-            if (location.distanceSquaredTo(center) >= distanceSquared && !locInfo.isWall() && !locInfo.isDam()){
-                // check if current flag location is at least 6 from both the other 2 flags:
-                boolean valid = true;
-                for (MapInfo neighbor : rc.senseNearbyMapInfos(location, 2)) {
-                    if (neighbor.isDam()) valid = false;
-                }
-                for (int j = 0; j < 3; j ++ ){
-                    if (j + 1 != Constants.myID && location.distanceSquaredTo(Comms.getFlagLocation(rc, rc.getTeam(), j)) < 36){
-                        valid = false;
-                        break;
-                    }
-                }
-                if (valid) possibleMoves.add(location);
-            }
-        }
-        possibleMoves.sort(comparator);
-        MapLocation[] results = new MapLocation[possibleMoves.size()];
-        return possibleMoves.toArray(results);
-    }
+//    public static MapLocation[] avoid(RobotController rc, MapLocation center, int distanceSquared) throws GameActionException {
+//        ArrayList<MapLocation> possibleMoves = new ArrayList<>();
+//        Comparator<MapLocation> comparator = (a, b) -> {
+//            // sort in reverse order of distance
+//            MapLocation current = rc.getLocation();
+//            int minDistanceToOtherA = Integer.MAX_VALUE;
+//            int minDistanceToOtherB = Integer.MAX_VALUE;
+//            for (int j = 0; j < 3; j++){
+//                try {
+//                    MapLocation flag = Comms.getFlagLocation(rc, rc.getTeam(), j);
+//                    if (j + 1 != Constants.myID && current.distanceSquaredTo(flag) < minDistanceToOtherA) {
+//                        minDistanceToOtherA = a.distanceSquaredTo(flag);
+//                    }
+//                    if (j + 1 != Constants.myID && current.distanceSquaredTo(flag) < minDistanceToOtherB) {
+//                        minDistanceToOtherB = b.distanceSquaredTo(flag);
+//                    }
+//                } catch (GameActionException e) {
+//                    throw new RuntimeException(e);
+//                }
+//            }
+//            if (a.equals(current.add(current.directionTo(center).opposite()))) return -1;
+//            else if (b.equals(current.add(current.directionTo(center).opposite()))) return 1;
+//            else if (minDistanceToOtherA != minDistanceToOtherB) return Integer.compare(minDistanceToOtherA, minDistanceToOtherB);
+//            else return Integer.compare(b.distanceSquaredTo(center), a.distanceSquaredTo(center));
+//        };
+//        for (MapInfo locInfo : rc.senseNearbyMapInfos(2)){
+//            MapLocation location = locInfo.getMapLocation();
+//            if (location.distanceSquaredTo(center) >= distanceSquared && !locInfo.isWall() && !locInfo.isDam()) {
+//                boolean valid = true;
+//                for (MapInfo neighbor : rc.senseNearbyMapInfos(location, 2)) {
+//                    if (neighbor.isDam()) valid = false;
+//                }
+//                // check if current flag location is at least 6 from both the other 2 flags:
+//                for (int j = 0; j < 3; j ++ ){
+//                    if (j + 1 != Constants.myID && location.distanceSquaredTo(Comms.getFlagLocation(rc, rc.getTeam(), j)) < 36){
+//                        valid = false;
+//                        break;
+//                    }
+//                }
+//                if (valid) possibleMoves.add(location);
+//            }
+//        }
+//        possibleMoves.sort(comparator);
+//        MapLocation[] results = new MapLocation[possibleMoves.size()];
+//        return possibleMoves.toArray(results);
+//    }
 }

@@ -31,8 +31,12 @@ public strictfp class RobotPlayer {
                     main.run();
                 }
             } catch (Exception e) {
-                System.out.println("Exception at round " + rc.getRoundNum());
+                String message = "Exception";
+                MapLocation loc = rc.getLocation();
+                if (loc != null) message += " at " + loc;
+                System.out.println(message);
                 e.printStackTrace();
+                System.out.println();
             } finally {
                 Clock.yield();
             }
