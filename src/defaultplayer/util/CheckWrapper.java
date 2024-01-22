@@ -43,7 +43,10 @@ public class CheckWrapper {
         boolean isDanger = false;
         MapLocation myFlag = ALLY_FLAGS[myID - 1];
         for (RobotInfo robot : rc.senseNearbyRobots(-1, rc.getTeam().opponent())) {
-            if (myFlag.distanceSquaredTo(robot.getLocation()) < 20) isDanger = true; break;
+            if (myFlag.distanceSquaredTo(robot.getLocation()) < 20) {
+                isDanger = true;
+                break;
+            }
         }
         return isBuilder() && isDanger;
     }

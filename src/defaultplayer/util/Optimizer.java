@@ -9,19 +9,14 @@ import java.util.Comparator;
 import static defaultplayer.Constants.*;
 
 public class Optimizer {
-
     public static MapLocation[] sortSpawnZone(RobotController rc) {
         MapLocation current = rc.getLocation();
-        Comparator<MapLocation> minimum = new Comparator<MapLocation>() {
-            @Override
-            public int compare(MapLocation o1, MapLocation o2) {
-                return Integer.compare(o1.distanceSquaredTo(current), o2.distanceSquaredTo(current));
-            }
-        };
+        Comparator<MapLocation> minimum = Comparator.comparingInt(o -> o.distanceSquaredTo(current));
         MapLocation[] sortedSpawnZone = Arrays.copyOf(SPAWN_ZONES, SPAWN_ZONES.length);
         Arrays.sort(sortedSpawnZone, minimum);
         return sortedSpawnZone;
     }
+
     public static MapLocation nearestSpawnZone(RobotController rc) {
         if (!rc.isSpawned()) return null;
         int minDistance = Integer.MAX_VALUE;
@@ -38,11 +33,10 @@ public class Optimizer {
 
     public static MapLocation nearestFlag(RobotController rc) {
         if (!rc.isSpawned()) return null;
-        int minDistance = Integer.MAX_VALUE;
-        MapLocation nearest = null;
-        MapLocation current = rc.getLocation();
-//        System.out.println(Integer.toString(rc.getRoundNum()).concat(Arrays.toString(ENEMY_FLAGS_PING)));
-        // prioritize reported comms flags over flag pings
+//        int minDistance = Integer.MAX_VALUE;
+//        MapLocation nearest = null;
+//        MapLocation current = rc.getLocation();
+//        // prioritize reported comms flags over flag pings
 //        for (MapLocation flag : ENEMY_FLAGS_COMMS) {
 //            int distance = current.distanceSquaredTo(flag);
 //            if (distance < minDistance) {
@@ -60,12 +54,12 @@ public class Optimizer {
 //        }
 //        return nearest;
 
-        MapLocation[] ENEMY_FLAGS = new MapLocation[ENEMY_FLAGS_COMMS.length + ENEMY_FLAGS_PING.length];
-        for (int i = 0; i < ENEMY_FLAGS.length ; i ++ ) {
-            if (i < ENEMY_FLAGS_COMMS.length) ENEMY_FLAGS[i] = ENEMY_FLAGS_COMMS[i];
-            else ENEMY_FLAGS[i] = ENEMY_FLAGS_PING[i - ENEMY_FLAGS_COMMS.length];
+        MapLocation[] enemyFlags = new MapLocation[ENEMY_FLAGS_COMMS.length + ENEMY_FLAGS_PING.length];
+        for (int i = 0; i < enemyFlags.length; i++) {
+            if (i < ENEMY_FLAGS_COMMS.length) enemyFlags[i] = ENEMY_FLAGS_COMMS[i];
+            else enemyFlags[i] = ENEMY_FLAGS_PING[i - ENEMY_FLAGS_COMMS.length];
         }
-        return ENEMY_FLAGS[myID % ENEMY_FLAGS.length];
+        return enemyFlags.length > 0 ? enemyFlags[myID % enemyFlags.length] : null;
     }
 
     public static RobotInfo nearestEnemy(RobotController rc) throws GameActionException {
