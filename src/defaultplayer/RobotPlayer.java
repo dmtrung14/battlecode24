@@ -28,11 +28,10 @@ public strictfp class RobotPlayer {
                 if (rc.getRoundNum() <= GameConstants.SETUP_ROUNDS) {
                     setup.run();
                 } else {
-                    setup.backFlagLoc();
                     main.run();
                 }
             } catch (Exception e) {
-                System.out.println("Exception");
+                System.out.println("Exception at round " + rc.getRoundNum());
                 e.printStackTrace();
             } finally {
                 Clock.yield();

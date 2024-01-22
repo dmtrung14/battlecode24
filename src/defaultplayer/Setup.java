@@ -22,20 +22,17 @@ public class Setup {
         this.rand = new Random(rc.getID());
     }
 
-    public void spawn() throws GameActionException {
-        while (!rc.isSpawned()) {
-            if (isBuilder()) {
-                MapLocation spawnPosition = SPAWN_ZONES[9 * (myID - 1) + 4];
-                if (rc.canSpawn(spawnPosition)) rc.spawn(spawnPosition);
-            } else {
-                int randomZone = rand.nextInt(27);
-                for (int i = 27; i >= 1; i--) {
-                    if (rc.canSpawn(Constants.SPAWN_ZONES[(randomZone + i) % 27])) {
-                        rc.spawn(Constants.SPAWN_ZONES[(randomZone + i) % 27]);
-                    }
+    public void trySpawn() throws GameActionException {
+        if (isBuilder()) {
+            MapLocation spawnPosition = SPAWN_ZONES[9 * (myID - 1) + 4];
+            if (rc.canSpawn(spawnPosition)) rc.spawn(spawnPosition);
+        } else {
+            int randomZone = rand.nextInt(27);
+            for (int i = 27; i >= 1; i--) {
+                if (rc.canSpawn(Constants.SPAWN_ZONES[(randomZone + i) % 27])) {
+                    rc.spawn(Constants.SPAWN_ZONES[(randomZone + i) % 27]);
                 }
             }
-
         }
     }
 
@@ -91,42 +88,6 @@ public class Setup {
         }
     }
 
-    public void moveToCenter() throws GameActionException {
-        MapLocation center = new MapLocation(Constants.mapWidth / 2, Constants.mapHeight / 2);
-        Queue<Integer> pastDistance = new LinkedList<>();
-        pastDistance.add(rc.getLocation().distanceSquaredTo(center));
-        Direction lastDir = Direction.CENTER;
-        MapLocation[] nextLocation = Pathfind.attract(rc, center, pastDistance.remove());
-        while ((nextLocation.length > 0 || !isNearDam(rc)) && rc.getRoundNum() <= GameConstants.SETUP_ROUNDS) {
-            pastDistance.add(rc.getLocation().distanceSquaredTo(center));
-
-            if (nextLocation.length > 0) {
-                for (int i = 0; i < nextLocation.length; i++) {
-                    Direction dir = rc.getLocation().directionTo(nextLocation[i]);
-                    if (rc.canMove(dir)) {
-                        rc.move(dir);
-                        lastDir = dir;
-                        break;
-                    }
-                    if (i == (nextLocation.length - 1) && rc.getRoundNum() < GameConstants.SETUP_ROUNDS) {
-                        i = -1;
-                        Clock.yield();
-                    }
-                }
-                nextLocation = Pathfind.attract(rc, center, pastDistance.remove());
-            } else {
-                if (rc.canMove(lastDir)) rc.move(lastDir);
-                else if (rc.canMove(lastDir.rotateLeft())) {
-                    rc.move(lastDir.rotateLeft());
-                    lastDir = lastDir.rotateLeft();
-                } else if (rc.canMove(lastDir.rotateRight())) {
-                    rc.move(lastDir.rotateRight());
-                    lastDir = lastDir.rotateRight();
-                }
-            }
-        }
-    }
-
     public void buildAroundFlags() throws GameActionException {
         MapLocation flagLoc = rc.getLocation();
         MapInfo[] aroundFlag = rc.senseNearbyMapInfos(flagLoc, 5);
@@ -170,18 +131,10 @@ public class Setup {
         }
     }
 
-    public void backFlagLoc() throws GameActionException {
-        if (!isBuilder() || !rc.isSpawned()) return;
-        MapLocation flagLoc = Constants.ALLY_FLAGS[Constants.myID - 1];
-        while (rc.isSpawned() && !rc.getLocation().equals(flagLoc)) {
-            Pathfind.moveToward(rc, flagLoc, false);
-            Clock.yield();
-        }
-    }
-
     public void run() throws GameActionException {
         if (!rc.isSpawned()) {
-            spawn();
+            trySpawn();
+            if (!rc.isSpawned()) return;
         }
         if (isBuilder()) {
             if (rc.getRoundNum() <= Constants.FLAG_RUSH_ROUNDS) {
@@ -197,8 +150,8 @@ public class Setup {
             Pathfind.moveToward(rc, Constants.ALLY_FLAGS[Constants.myID - 1], false);
         } else if (isExplorer()) {
             if (rc.getRoundNum() <= Constants.EXPLORE_ROUNDS) Pathfind.explore(rc);
-            else {
-                moveToCenter();
+            else if (!isNearDam(rc)){
+                Pathfind.moveToward(rc, new MapLocation(mapWidth / 2, mapHeight / 2), true);
             }
         }
     }

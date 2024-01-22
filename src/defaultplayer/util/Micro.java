@@ -121,9 +121,9 @@ public class Micro {
             case 1: attackLv1(rc); break;
             case 2: attackLv2(rc); break;
             case 3: attackLv3(rc); break;
-            default: break;
         }
     }
+
     public static void tryHeal(RobotController rc) throws GameActionException {
         if (!rc.isSpawned()) return;
         RobotInfo weakest = weakestAlly(rc);

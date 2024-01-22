@@ -5,7 +5,7 @@ import battlecode.common.*;
 import static defaultplayer.Constants.*;
 import static defaultplayer.util.CheckWrapper.*;
 import static defaultplayer.util.Micro.*;
-import static defaultplayer.util.Optimizer.*;
+import static defaultplayer.util.Optimizer.nearestFlag;
 
 public class MainPhase {
     private final RobotController rc;
@@ -24,7 +24,6 @@ public class MainPhase {
         else if (rc.canBuyGlobal(GlobalUpgrade.CAPTURING)) rc.buyGlobal(GlobalUpgrade.CAPTURING);
     }
 
-
     public void tryUpdateInfo() throws GameActionException {
         if (!rc.isSpawned()) return;
         Comms.reportNearbyEnemyFlags(rc);
@@ -33,21 +32,19 @@ public class MainPhase {
     }
 
     public void run() throws GameActionException {
-//        if (rc.getRoundNum() > 400) rc.resign();
+        if (!rc.isSpawned()) {
+            setup.trySpawn();
+            if (!rc.isSpawned()) return;
+        }
         if (isBuilder()) {
-            if (!rc.isSpawned()) {
-                setup.spawn();
-                Pathfind.moveToward(rc, ALLY_FLAGS[myID - 1], true);
-            } else {
-                Comms.setFlagDanger(rc, myID - 1, isFlagInDanger(rc));
-                if (isFlagInDanger(rc)) {
+            Pathfind.moveToward(rc, ALLY_FLAGS[myID - 1], true);
+            Comms.setFlagDanger(rc, myID - 1, isFlagInDanger(rc));
+            if (isFlagInDanger(rc)) {
 //                    System.out.println(toAttack(rc));
-                    tryAttack(rc);
-                }
+                tryAttack(rc);
             }
         }
         else if (isExplorer()) {
-            if (!rc.isSpawned()) setup.spawn();
             tryBuyGlobal();
             tryUpdateInfo();
 
