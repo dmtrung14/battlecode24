@@ -1,8 +1,8 @@
-package defaultplayer;
+package defaultplayer_sprint2;
 
 import battlecode.common.*;
 
-import static defaultplayer.util.Optimizer.nearbyFlagHolder;
+import static defaultplayer_sprint2.util.Optimizer.nearbyFlagHolder;
 
 
 public class Pathfind {
@@ -17,10 +17,6 @@ public class Pathfind {
         moveAwayFromEdge(rc);
         moveAwayFromAllies(rc);
         moveRandomly(rc);
-    }
-
-    public static void exploreIterable(RobotController rc) throws GameActionException {
-
     }
 
     private static void collectCrumbs(RobotController rc) throws GameActionException {
