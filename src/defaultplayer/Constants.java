@@ -11,6 +11,8 @@ public class Constants {
     public static int mapWidth;
     public static int mapHeight;
 
+    public static int[] TURN_QUEUE;
+
     public static final Integer[] BUILDERS = {1, 2, 3};
 
     public static MapLocation[] SPAWN_ZONES;

@@ -26,6 +26,31 @@ public class Comms {
         }
     }
 
+    public static void postTurnQueue(RobotController rc) throws GameActionException{
+        if (!rc.isSpawned()) return;
+        for (int i = 0; i < 50; i++) {
+            if (rc.readSharedArray(i) == 0){
+                rc.writeSharedArray(i, rc.getID());
+                break;
+            }
+        }
+    }
+
+    public static void getTurnQueue(RobotController rc) throws GameActionException {
+        if (!rc.isSpawned()) return;
+        int[] queue = new int[50];
+        for (int i = 0; i < 50; i++) {
+            queue[i] = rc.readSharedArray(i);
+        }
+        TURN_QUEUE = queue;
+    }
+
+    public static void clear() throw GameActionException {
+        for (int i = 0; i < 64; i++) {
+            rc.writeSharedArray(i, 0);
+        }
+    }
+
     // can use this to assign robots roles at the start of the game
     // id ranges from 1 to 50
     public static int incrementAndGetId(RobotController rc) throws GameActionException {

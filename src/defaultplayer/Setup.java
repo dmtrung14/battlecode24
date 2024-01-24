@@ -62,6 +62,12 @@ public class Setup {
         for (int i = 0; i < 100; i++) ZONE_INFO[i] = new ZoneInfo();
     }
 
+    public void intializeTurnQueue() throws GameActionException {
+        Comms.postTurnQueue(rc);
+        Clock.yield();
+        Comms.getTurnQueue(rc);
+    }
+
     public void moveFlag() throws GameActionException {
         MapLocation flag = rc.senseNearbyFlags(2, rc.getTeam())[0].getLocation();
         if (rc.canPickupFlag(flag)) {

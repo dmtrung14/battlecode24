@@ -20,8 +20,9 @@ public strictfp class RobotPlayer {
     public static void run(RobotController rc) throws GameActionException {
         Setup setup = new Setup(rc);
         MainPhase main = new MainPhase(rc);
-
         setup.initializeStatic();
+        setup.intializeTurnQueue();
+
 
         while (true) {
             try {
