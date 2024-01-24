@@ -29,7 +29,6 @@ public class Comms {
     }
 
     public static void postTurnQueue(RobotController rc) throws GameActionException{
-        if (!rc.isSpawned()) return;
         for (int i = 0; i < 50; i++) {
             if (rc.readSharedArray(i) == 0){
                 rc.writeSharedArray(i, rc.getID());
@@ -39,7 +38,6 @@ public class Comms {
     }
 
     public static void getTurnQueue(RobotController rc) throws GameActionException {
-        if (!rc.isSpawned()) return;
         int[] queue = new int[50];
         for (int i = 0; i < 50; i++) {
             queue[i] = rc.readSharedArray(i);

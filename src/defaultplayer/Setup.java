@@ -62,11 +62,12 @@ public class Setup {
         for (int i = 0; i < 100; i++) ZONE_INFO[i] = new ZoneInfo();
     }
 
-    public void intializeTurnQueue() throws GameActionException {
+    public void initializeTurnQueue() throws GameActionException {
         Comms.postTurnQueue(rc);
         Clock.yield();
         Comms.getTurnQueue(rc);
-        Comms.clear(rc);
+        if (rc.getID() == TURN_QUEUE[49]) Comms.clear(rc);
+        Clock.yield();
     }
 
     public void moveFlag() throws GameActionException {
@@ -174,7 +175,6 @@ public class Setup {
     public void run() throws GameActionException {
         if (!rc.isSpawned()) {
             trySpawn();
-            if (!rc.isSpawned()) return;
         }
         if (isBuilder()) {
             if (rc.getRoundNum() <= FLAG_RUSH_ROUNDS) {

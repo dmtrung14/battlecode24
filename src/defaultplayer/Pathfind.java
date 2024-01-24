@@ -75,6 +75,7 @@ public class Pathfind {
     }
 
     private static void collectCrumbs(RobotController rc) throws GameActionException {
+        if (!rc.isSpawned()) return;
         MapLocation[] crumbs = rc.senseNearbyCrumbs(-1);
         if (crumbs.length > 0) {
             moveToward(rc, crumbs[0], true);
@@ -82,6 +83,7 @@ public class Pathfind {
     }
 
     private static void moveAwayFromEdge(RobotController rc) throws GameActionException {
+        if (!rc.isSpawned()) return;
         MapLocation loc = rc.getLocation();
         if (rc.getLocation().x < 3) loc = loc.add(Direction.EAST);
         if (rc.getLocation().x > Constants.mapWidth - 4) loc = loc.add(Direction.WEST);
@@ -91,6 +93,7 @@ public class Pathfind {
     }
 
     private static void moveAwayFromAllies(RobotController rc) throws GameActionException {
+        if (!rc.isSpawned()) return;
         MapLocation loc = rc.getLocation();
         RobotInfo[] allies = rc.senseNearbyRobots(-1, rc.getTeam());
         if (allies.length > 0) {
