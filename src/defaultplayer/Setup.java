@@ -180,7 +180,8 @@ public class Setup {
             Pathfind.moveToward(rc, myFlag, true);
             if (rc.getRoundNum() > FLAG_RUSH_ROUNDS) digLand2(myFlag);
         } else if (isExplorer()) {
-            if (rc.getRoundNum() <= EXPLORE_ROUNDS) Pathfind.explore(rc);
+            if (rc.getRoundNum() <= 50) Pathfind.explore(rc);
+            else if(rc.getRoundNum() <= EXPLORE_ROUNDS) Pathfind.exploreDVD(rc);
             else if (!isNearDam(rc)) {
                 MapLocation center = new MapLocation(mapWidth / 2, mapHeight / 2);
                 Pathfind.moveToward(rc, center, true);

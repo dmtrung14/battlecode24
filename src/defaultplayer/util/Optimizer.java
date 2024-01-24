@@ -10,13 +10,6 @@ import static defaultplayer.Constants.*;
 import static defaultplayer.util.Micro.*;
 
 public class Optimizer {
-    public static MapLocation[] sortSpawnZone(RobotController rc) {
-        MapLocation current = rc.getLocation();
-        Comparator<MapLocation> minimum = Comparator.comparingInt(o -> o.distanceSquaredTo(current));
-        MapLocation[] sortedSpawnZone = Arrays.copyOf(SPAWN_ZONES, SPAWN_ZONES.length);
-        Arrays.sort(sortedSpawnZone, minimum);
-        return sortedSpawnZone;
-    }
 
     public static MapLocation nearestSpawnZone(RobotController rc) {
         if (!rc.isSpawned()) return null;
@@ -127,5 +120,16 @@ public class Optimizer {
             }
         }
         return weakest;
+    }
+
+    public static int nearDirection(Direction ogDir, Direction tagDir) {
+        if (tagDir.equals(ogDir)) return 0;
+        else if (tagDir.equals(ogDir.rotateLeft())) return 1;
+        else if (tagDir.equals(ogDir.rotateRight())) return 1;
+        else if (tagDir.equals(ogDir.rotateLeft().rotateLeft())) return 2;
+        else if (tagDir.equals(ogDir.rotateRight().rotateRight())) return 2;
+        else if (tagDir.equals(ogDir.rotateRight().rotateRight().rotateRight())) return 3;
+        else if (tagDir.equals(ogDir.rotateLeft().rotateLeft().rotateLeft())) return 3;
+        else return 4;
     }
 }

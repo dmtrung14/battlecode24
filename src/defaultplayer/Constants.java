@@ -2,6 +2,7 @@ package defaultplayer;
 
 import java.util.*;
 import battlecode.common.*;
+import defaultplayer.util.FastIterableLocSet;
 import defaultplayer.util.ZoneInfo;
 
 public class Constants {
@@ -36,4 +37,9 @@ public class Constants {
     public static Random RANDOM;
 
     public static ZoneInfo[] ZONE_INFO = new ZoneInfo[100];
+
+    public static FastIterableLocSet MAP_LOC_SET = new FastIterableLocSet(3600);
+
+    public static ArrayList<MapLocation> ENEMY_BORDER_LINE = new ArrayList<MapLocation>();
+    public static ArrayList<MapLocation> NEUTRAL_BORDERLINE = new ArrayList<MapLocation>();
 }
