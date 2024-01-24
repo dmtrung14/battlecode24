@@ -4,7 +4,9 @@ import battlecode.common.*;
 
 import java.util.ArrayList;
 
+
 import defaultplayer.util.ZoneInfo;
+import static defaultplayer.Constants.*;
 
 public class Comms {
     private static final int BOT_ID_INDEX = 0;
@@ -45,7 +47,7 @@ public class Comms {
         TURN_QUEUE = queue;
     }
 
-    public static void clear() throw GameActionException {
+    public static void clear(RobotController rc) throws GameActionException {
         for (int i = 0; i < 64; i++) {
             rc.writeSharedArray(i, 0);
         }

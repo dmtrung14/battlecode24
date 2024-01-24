@@ -66,6 +66,7 @@ public class Setup {
         Comms.postTurnQueue(rc);
         Clock.yield();
         Comms.getTurnQueue(rc);
+        Comms.clear(rc);
     }
 
     public void moveFlag() throws GameActionException {
