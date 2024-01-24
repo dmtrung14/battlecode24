@@ -1,6 +1,7 @@
 package defaultplayer;
 
 import battlecode.common.*;
+import battlecode.schema.Vec;
 import defaultplayer.util.ZoneInfo;
 
 import java.util.*;
@@ -78,14 +79,15 @@ public class Setup {
                     dir.rotateRight(),
                     leftDist < rightDist ? dir.rotateLeft().rotateLeft() : dir.rotateRight().rotateRight()
             };
-            dirLoop: for (Direction d : dirs) {
+            dirLoop:
+            for (Direction d : dirs) {
                 MapLocation loc = rc.adjacentLocation(d);
                 for (MapInfo neighbor : rc.senseNearbyMapInfos(loc, 2)) {
                     if (neighbor.isDam()) continue dirLoop;
                 }
                 // check if current flag location is at least 6 from both the other 2 flags
                 for (int j = 0; j < 3; j++) {
-                    if (j + 1 != Constants.myID && loc.distanceSquaredTo(Comms.getFlagLocation(rc, rc.getTeam(), j)) < 36){
+                    if (j + 1 != Constants.myID && loc.distanceSquaredTo(Comms.getFlagLocation(rc, rc.getTeam(), j)) < 36) {
                         continue dirLoop;
                     }
                 }
@@ -105,27 +107,34 @@ public class Setup {
     }
 
     public void buildAroundFlags() throws GameActionException {
-        MapLocation flagLoc = rc.getLocation();
-        MapInfo[] aroundFlag = rc.senseNearbyMapInfos(flagLoc, 2);
-        for (MapInfo a : aroundFlag) {
-            if (a.isPassable() && !a.getMapLocation().equals(flagLoc)) {
-                MapLocation loc = a.getMapLocation();
-                if ((loc.x + loc.y) % 2 == 1) {
-                    builder.waitAndBuildTrapTurn(TrapType.STUN, a.getMapLocation(), 1);
-                } else {
-                    builder.waitAndBuildTrapTurn(TrapType.EXPLOSIVE, a.getMapLocation(), 1);
-                }
-            }
+        MapLocation center = new MapLocation(mapWidth / 2, mapHeight / 2);
+        Direction dir = rc.getLocation().directionTo(center);
+        Direction dir1 = dir.rotateRight();
+        Direction dir2 = dir.rotateLeft();
+        if (rc.canBuild(TrapType.WATER, rc.getLocation().add(dir))) {
+            rc.build(TrapType.WATER, rc.getLocation().add(dir));
+        }
+//        if (rc.canBuild(TrapType.EXPLOSIVE, rc.getLocation().add(dir1))) {
+//            rc.build(TrapType.EXPLOSIVE, rc.getLocation().add(dir1));
+//        }
+        if (rc.canBuild(TrapType.EXPLOSIVE, rc.getLocation().add(dir2))) {
+            rc.build(TrapType.EXPLOSIVE, rc.getLocation().add(dir2));
         }
         afterBuildTrap = true;
     }
 
-    public void digLand(int radius) throws GameActionException {
+    public void digLand() throws GameActionException {
         if (!rc.isSpawned()) return;
+        Vector<Direction> dirSet = new Vector<>();
+        MapLocation center = new MapLocation(mapWidth / 2, mapHeight / 2);
+        Direction DirsFromCenter =ALLY_FLAGS[myID - 1].directionTo(center);
+        dirSet.add(DirsFromCenter);
+        dirSet.add(DirsFromCenter.rotateRight());
+        dirSet.add(DirsFromCenter.rotateLeft());
         Direction[] dirs = Direction.allDirections();
-        Direction dir = dirs[rand.nextInt(dirs.length)];
+        Direction dir = dirSet.get(rand.nextInt(dirSet.size()));
         MapLocation myFlag = ALLY_FLAGS[myID - 1];
-        while (rc.canMove(dir) && rc.getLocation().distanceSquaredTo(myFlag) <= radius) {
+        while (rc.canMove(dir) && dirSet.contains(myFlag.directionTo(rc.getLocation().add(dir)))) {
             rc.move(dir);
             for (Direction d : dirs) {
                 MapLocation site = rc.adjacentLocation(d);
@@ -133,14 +142,9 @@ public class Setup {
                         && (site.x + site.y) % 2 == 0) {
                     rc.dig(site);
                 }
-//                else if (rc.canBuild(TrapType.EXPLOSIVE, site)) {
-//                    builder.waitAndBuildTrapTurn(TrapType.EXPLOSIVE, site, 2);
-//                }
             }
         }
-        if (rc.getLocation().distanceSquaredTo(myFlag) > radius) {
-            Pathfind.moveToward(rc, myFlag, false);
-        }
+
     }
 
     public void digLand2(MapLocation flag) throws GameActionException {
@@ -172,13 +176,13 @@ public class Setup {
             if (!afterBuildTrap) {
                 buildAroundFlags();
             }
-            digLand(40);
+            digLand();
             Pathfind.moveToward(rc, ALLY_FLAGS[myID - 1], false);
         } else if (4 <= myID && myID <= 9) {
             ALLY_FLAGS = Comms.getAllyFlagLocations(rc);
             MapLocation myFlag = ALLY_FLAGS[(myID - 4) / 2];
             Pathfind.moveToward(rc, myFlag, true);
-            if (rc.getRoundNum() > FLAG_RUSH_ROUNDS) digLand2(myFlag);
+//            if (rc.getRoundNum() > FLAG_RUSH_ROUNDS) digLand2(myFlag);
         } else if (isExplorer()) {
             if (rc.getRoundNum() <= EXPLORE_ROUNDS) Pathfind.explore(rc);
             else if (!isNearDam(rc)) {
