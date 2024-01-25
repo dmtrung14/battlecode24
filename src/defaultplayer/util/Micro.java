@@ -37,24 +37,25 @@ public class Micro {
     }
 
     public static void retreat(RobotController rc) throws GameActionException {
-        // TODO : handle which direction to retreat;
-        MapLocation current = rc.getLocation();
-        RobotInfo[] nearbyEnemies = rc.senseNearbyRobots(10, rc.getTeam().opponent());
-        RobotInfo bestEnemy = null;
-        double bestScore = 0;
-        for (RobotInfo enemy : nearbyEnemies) {
-            double enemyScore = enemy.getAttackLevel() + (double) enemy.getHealth() * 0.002;
-            if (enemyScore > bestScore) {
-                bestScore = enemyScore;
-                bestEnemy = enemy;
-            }
-        }
-        if (bestEnemy != null) {
-            Direction awayFromEnemy = current.directionTo(bestEnemy.getLocation()).opposite();
-            if (rc.canMove(awayFromEnemy)) rc.move(awayFromEnemy);
-            else if (rc.canMove(awayFromEnemy.rotateRight())) rc.move(awayFromEnemy.rotateRight());
-            else if (rc.canMove(awayFromEnemy.rotateLeft())) rc.move(awayFromEnemy.rotateLeft());
-        }
+//        // TODO : handle which direction to retreat;
+//        MapLocation current = rc.getLocation();
+//        RobotInfo[] nearbyEnemies = rc.senseNearbyRobots(10, rc.getTeam().opponent());
+//        RobotInfo bestEnemy = null;
+//        double bestScore = 0;
+//        for (RobotInfo enemy : nearbyEnemies) {
+//            double enemyScore = enemy.getAttackLevel() + (double) enemy.getHealth() * 0.002;
+//            if (enemyScore > bestScore) {
+//                bestScore = enemyScore;
+//                bestEnemy = enemy;
+//            }
+//        }
+//        if (bestEnemy != null) {
+//            Direction awayFromEnemy = current.directionTo(bestEnemy.getLocation()).opposite();
+//            if (rc.canMove(awayFromEnemy)) rc.move(awayFromEnemy);
+//            else if (rc.canMove(awayFromEnemy.rotateRight())) rc.move(awayFromEnemy.rotateRight());
+//            else if (rc.canMove(awayFromEnemy.rotateLeft())) rc.move(awayFromEnemy.rotateLeft());
+//        }
+        Pathfind.moveAwayFromTeam(rc, rc.getTeam().opponent());
     }
 
     public static void attackLv3(RobotController rc) throws GameActionException {
@@ -75,11 +76,6 @@ public class Micro {
             tryHeal(rc);
         }
         else if (current.distanceSquaredTo(weakestEnemyLoc) <= 10) {
-            /* build stun trap so that we don't get hurt when we walk forward hopefully */
-            Direction dirToEnemy = current.directionTo(weakestEnemyLoc);
-            if (rc.canBuild(TrapType.STUN, current.add(dirToEnemy))) rc.build(TrapType.STUN, current.add(dirToEnemy));
-//            if (rc.canBuild(TrapType.STUN, current.add(dirToEnemy.rotateLeft()))) rc.build(TrapType.STUN, current.add(dirToEnemy.rotateLeft()));
-//            else if (rc.canBuild(TrapType.STUN, current.add(dirToEnemy.rotateRight()))) rc.build(TrapType.STUN, current.add(dirToEnemy.rotateRight()));
             Pathfind.moveToward(rc, weakestEnemyLoc, false);
         } else {
             tryHeal(rc);
@@ -97,12 +93,6 @@ public class Micro {
                 rc.attack(weakestEnemyLoc);
             }
             retreat(rc);
-        }
-        else if (current.distanceSquaredTo(weakestEnemyLoc) <= 10) {
-            Direction dirToEnemy = current.directionTo(weakestEnemyLoc);
-            if (rc.canBuild(TrapType.EXPLOSIVE, current.add(dirToEnemy))) rc.build(TrapType.EXPLOSIVE, current.add(dirToEnemy));
-            if (rc.canBuild(TrapType.STUN, current.add(dirToEnemy.rotateLeft()))) rc.build(TrapType.STUN, current.add(dirToEnemy.rotateLeft()));
-            else if (rc.canBuild(TrapType.STUN, current.add(dirToEnemy.rotateRight()))) rc.build(TrapType.STUN, current.add(dirToEnemy.rotateRight()));
         } else {
             tryHeal(rc);
         }
@@ -121,10 +111,6 @@ public class Micro {
             retreat(rc);
         }
         else if (current.distanceSquaredTo(weakestEnemyLoc) <= 10) {
-            Direction dirToEnemy = current.directionTo(weakestEnemyLoc);
-            if (rc.canBuild(TrapType.STUN, current.add(dirToEnemy))) rc.build(TrapType.STUN, current.add(dirToEnemy));
-            if (rc.canBuild(TrapType.WATER, current.add(dirToEnemy.rotateLeft()))) rc.build(TrapType.WATER, current.add(dirToEnemy.rotateLeft()));
-            else if (rc.canBuild(TrapType.WATER, current.add(dirToEnemy.rotateRight()))) rc.build(TrapType.WATER, current.add(dirToEnemy.rotateRight()));
             retreat(rc);
         } else {
             tryHeal(rc);
@@ -147,6 +133,33 @@ public class Micro {
         RobotInfo weakest = weakestAlly(rc);
         if (weakest == null) return;
         if (rc.canHeal(weakest.getLocation())) rc.heal(weakest.getLocation());
+    }
+
+    public static void tryBuildTrap(RobotController rc, MapInfo[] mapInfos, RobotInfo[] allies, RobotInfo[] enemies) throws GameActionException {
+        for (MapInfo info : mapInfos) {
+            if (info.getTrapType() != TrapType.NONE) return;
+        }
+        if (allies.length <= 1 && enemies.length >= 4 && rc.canBuild(TrapType.WATER, rc.getLocation())) {
+            rc.build(TrapType.WATER, rc.getLocation());
+            return;
+        }
+        if (enemies.length > 0) {
+            boolean build = true;
+            for (RobotInfo enemy : enemies) {
+                if (enemy.location.isWithinDistanceSquared(rc.getLocation(), 16)) {
+                    build = false;
+                    break;
+                }
+            }
+            if (build && rc.canBuild(TrapType.WATER, rc.getLocation())) {
+                rc.build(TrapType.WATER, rc.getLocation());
+                return;
+            }
+        }
+        // build explosive trap?
+        if (rc.canBuild(TrapType.STUN, rc.getLocation())) {
+            rc.build(TrapType.STUN, rc.getLocation());
+        }
     }
 
     public static void tryMoveAwayFromFlagHolder(RobotController rc) throws GameActionException {
@@ -180,14 +193,14 @@ public class Micro {
     public static void tryReturnFlag(RobotController rc) throws GameActionException {
         MapLocation spawnZone = nearestSpawnZone(rc);
         int flagId = rc.senseNearbyFlags(0, rc.getTeam().opponent())[0].getID();
-        Pathfind.moveToward(rc, spawnZone, false);
+        Pathfind.moveToward(rc, spawnZone, false, true);
         if (!rc.hasFlag()) {
             Comms.reportEnemyFlagCaptured(rc, flagId);
             return;
         }
         if (!rc.isActionReady()) return;
         // try to ferry the flag
-        Direction dir = Pathfind.bellmanFord(rc, spawnZone, false);
+        Direction dir = Pathfind.bellmanFord(rc, spawnZone, false, true);
         if (dir == null) return;
         MapLocation loc = rc.adjacentLocation(dir);
         RobotInfo[] allies = rc.senseNearbyRobots(loc, 2, rc.getTeam());
