@@ -77,17 +77,12 @@ public class CheckWrapper {
         return false;
     }
 
-    public static MapLocation[] borderline() throws GameActionException {
-        MapLocation[] result = new MapLocation[ENEMY_BORDER_LINE.size() * 2 + NEUTRAL_BORDERLINE.size()];
-        ENEMY_BORDER_LINE.addAll(ENEMY_BORDER_LINE);
-        ENEMY_BORDER_LINE.addAll(NEUTRAL_BORDERLINE);
-        ENEMY_BORDER_LINE.toArray(result);
-        Arrays.sort(result);
-        return result;
+
+    public static boolean isNearEnemyTerritory(RobotController rc) throws GameActionException {
+        for (MapInfo mapInfo : rc.senseNearbyMapInfos(16))
+            if (mapInfo.getTeamTerritory() == rc.getTeam().opponent()) return true;
+        return false;
     }
 
-//    public static boolean hasObjective(RobotController rc) throws GameActionException {
-//        return isFlagDanger(rc) || nearestFlag(rc) != null;
-//    }
 
 }

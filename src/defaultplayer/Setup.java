@@ -184,8 +184,11 @@ public class Setup {
             else if(rc.getRoundNum() <= EXPLORE_ROUNDS) Pathfind.exploreDVD(rc);
             else if (!isNearDam(rc)) {
                 MapLocation center = new MapLocation(mapWidth / 2, mapHeight / 2);
-                Pathfind.moveToward(rc, !BORDERLINE.isEmpty() ? BORDERLINE.get(myID * 100 % BORDERLINE.size()) : center, true);
-            } else if (rc.canBuild(TrapType.STUN, rc.getLocation())) {
+//                Pathfind.moveToward(rc, !BORDERLINE.isEmpty() ? BORDERLINE.get(myID * 100 % BORDERLINE.size()) : center, true);
+                Pathfind.moveToward(rc, !ENEMY_BORDER_LINE.isEmpty() ?
+                        ENEMY_BORDER_LINE.get(myID % ENEMY_BORDER_LINE.size()) :
+                        (!NEUTRAL_BORDERLINE.isEmpty() ? NEUTRAL_BORDERLINE.get(myID % NEUTRAL_BORDERLINE.size()) : center), true);
+            } else if (rc.canBuild(TrapType.STUN, rc.getLocation()) && isNearEnemyTerritory(rc)) {
                 rc.build(TrapType.STUN, rc.getLocation());
             }
         }

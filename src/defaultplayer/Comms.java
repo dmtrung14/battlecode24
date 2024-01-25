@@ -6,6 +6,8 @@ import java.util.ArrayList;
 
 import defaultplayer.util.ZoneInfo;
 
+import static defaultplayer.Constants.*;
+
 public class Comms {
     private static final int BOT_ID_INDEX = 0;
     private static final int SYM_INDEX = 6;
