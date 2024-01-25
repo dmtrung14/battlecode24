@@ -1,14 +1,12 @@
 package defaultplayer;
 
 import battlecode.common.*;
-import battlecode.schema.Vec;
 import defaultplayer.util.ZoneInfo;
 
 import java.util.*;
 
 import static defaultplayer.Constants.*;
 import static defaultplayer.util.CheckWrapper.*;
-import static defaultplayer.util.Optimizer.*;
 
 
 public class Setup {
@@ -65,7 +63,7 @@ public class Setup {
     public void initializeTurnQueue() throws GameActionException {
         Comms.postTurnQueue(rc);
         Clock.yield();
-        Comms.getTurnQueue(rc);
+        TURN_QUEUE = Comms.getTurnQueue(rc);
         if (rc.getID() == TURN_QUEUE[49]) Comms.clear(rc);
         Clock.yield();
     }
@@ -133,16 +131,13 @@ public class Setup {
 
     public void digLand() throws GameActionException {
         if (!rc.isSpawned()) return;
-        Vector<Direction> dirSet = new Vector<>();
         MapLocation center = new MapLocation(mapWidth / 2, mapHeight / 2);
-        Direction DirsFromCenter =ALLY_FLAGS[myID - 1].directionTo(center);
-        dirSet.add(DirsFromCenter);
-        dirSet.add(DirsFromCenter.rotateRight());
-        dirSet.add(DirsFromCenter.rotateLeft());
+        Direction dirToCenter = ALLY_FLAGS[myID - 1].directionTo(center);
+        Direction[] dirSet = { dirToCenter, dirToCenter.rotateRight(), dirToCenter.rotateLeft() };
         Direction[] dirs = Direction.allDirections();
-        Direction dir = dirSet.get(rand.nextInt(dirSet.size()));
+        Direction dir = dirSet[rand.nextInt(3)];
         MapLocation myFlag = ALLY_FLAGS[myID - 1];
-        while (rc.canMove(dir) && dirSet.contains(myFlag.directionTo(rc.getLocation().add(dir)))) {
+        if (rc.canMove(dir) && contains(dirSet, myFlag.directionTo(rc.adjacentLocation(dir)))) {
             rc.move(dir);
             for (Direction d : dirs) {
                 MapLocation site = rc.adjacentLocation(d);
@@ -152,7 +147,6 @@ public class Setup {
                 }
             }
         }
-
     }
 
     public void digLand2(MapLocation flag) throws GameActionException {

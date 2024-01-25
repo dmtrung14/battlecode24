@@ -3,11 +3,8 @@ package defaultplayer;
 import battlecode.common.*;
 import defaultplayer.util.Optimizer;
 
-import java.awt.*;
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.Map;
 
 import static defaultplayer.Constants.*;
 import static defaultplayer.util.Optimizer.nearbyFlagHolder;
@@ -43,34 +40,34 @@ public class Pathfind {
                 }
             }
         }
-        ArrayList<Direction> possibleNextMoves = new ArrayList<Direction>();
-        Comparator<Direction> bestDirectionToExplore = new Comparator<Direction>() {
-            /* This Comparator sort directions decremental by number of new explorations
-                with tiebreaker by proximity to current direction
-            */
-            @Override
-            public int compare(Direction o1, Direction o2) {
-                MapLocation current = rc.getLocation();
-                try {
-                    int newCells1 = getNewLocationsInRange(rc, current.add(o1), -1);
-                    int newCells2 = getNewLocationsInRange(rc, current.add(o2), -1);
-                    Direction toCenter = current.directionTo(new MapLocation(mapWidth/2, mapHeight/2));
-                    if (newCells1 != newCells2) return Integer.compare(newCells2, newCells1);
+        ArrayList<Direction> possibleNextMoves = new ArrayList<>();
+        /* This Comparator sort directions decremental by number of new explorations
+            with tiebreaker by proximity to current direction
+        */
+        Comparator<Direction> bestDirectionToExplore = (o1, o2) -> {
+            MapLocation current = rc.getLocation();
+            try {
+                int newCells1 = getNewLocationsInRange(rc, current.add(o1), -1);
+                int newCells2 = getNewLocationsInRange(rc, current.add(o2), -1);
+//                Direction toCenter = current.directionTo(new MapLocation(mapWidth/2, mapHeight/2));
+                if (newCells1 != newCells2) return Integer.compare(newCells2, newCells1);
 //                    else if (Integer.compare(Optimizer.nearDirection(toCenter, o1), Optimizer.nearDirection(toCenter, o2)) != 0){
 //                        return Integer.compare(Optimizer.nearDirection(toCenter, o1), Optimizer.nearDirection(toCenter, o2));
 //                    }
-                    else return Integer.compare(Optimizer.nearDirection(DVDDir, o2), Optimizer.nearDirection(DVDDir, o1));
-                } catch (GameActionException e) {
-                    throw new RuntimeException(e);
-                }
+                else return Integer.compare(Optimizer.nearDirection(DVDDir, o2), Optimizer.nearDirection(DVDDir, o1));
+            } catch (GameActionException e) {
+                throw new RuntimeException(e);
             }
         };
         for (Direction dir : DIRECTIONS) if (rc.canMove(dir)) possibleNextMoves.add(dir);
         possibleNextMoves.sort(bestDirectionToExplore);
         Direction[] sortedNextMoves = new Direction[possibleNextMoves.size()];
         possibleNextMoves.toArray(sortedNextMoves);
-        for (Direction move : sortedNextMoves ) {
-            if (rc.canMove(move)) rc.move(move); break;
+        for (Direction move : sortedNextMoves) {
+            if (rc.canMove(move)) {
+                rc.move(move);
+                break;
+            }
         }
     }
 
@@ -203,7 +200,9 @@ public class Pathfind {
         }
     }
 
-    private static Direction bellmanFord(RobotController rc, MapLocation target, boolean fill) throws GameActionException {
+    public static Direction bellmanFord(RobotController rc, MapLocation target, boolean fill) throws GameActionException {
+        if (!rc.isSpawned()) return null;
+        if (rc.getLocation().equals(target)) return null;
         MapLocation start = rc.getLocation();
         long START_BIT = coordsToBit(3, 3);
         long[] reachable = new long[15];

@@ -4,9 +4,7 @@ import battlecode.common.*;
 
 import java.util.ArrayList;
 
-
 import defaultplayer.util.ZoneInfo;
-import static defaultplayer.Constants.*;
 
 public class Comms {
     private static final int BOT_ID_INDEX = 0;
@@ -37,12 +35,12 @@ public class Comms {
         }
     }
 
-    public static void getTurnQueue(RobotController rc) throws GameActionException {
+    public static int[] getTurnQueue(RobotController rc) throws GameActionException {
         int[] queue = new int[50];
         for (int i = 0; i < 50; i++) {
             queue[i] = rc.readSharedArray(i);
         }
-        TURN_QUEUE = queue;
+        return queue;
     }
 
     public static void clear(RobotController rc) throws GameActionException {

@@ -1,14 +1,14 @@
 package defaultplayer;
 
 import battlecode.common.*;
+
 public strictfp class RobotPlayer {
     public static void run(RobotController rc) throws GameActionException {
         Setup setup = new Setup(rc);
         MainPhase main = new MainPhase(rc);
         setup.initializeTurnQueue();
         setup.initializeStatic();
-
-
+//        rc.setIndicatorString(String.valueOf(Constants.myID));
 
         while (true) {
             try {
@@ -30,5 +30,4 @@ public strictfp class RobotPlayer {
         }
         // Your code should never reach here (unless it's intentional)! Self-destruction imminent...
     }
-
 }
