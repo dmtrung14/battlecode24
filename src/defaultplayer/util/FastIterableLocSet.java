@@ -42,6 +42,10 @@ public class FastIterableLocSet {
         }
     }
 
+    public int size() {
+        return size;
+    }
+
     public void remove(MapLocation loc) {
         String key = locToStr(loc);
         int index;

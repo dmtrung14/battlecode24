@@ -1,19 +1,20 @@
 package defaultplayer;
 
 import battlecode.common.*;
+import defaultplayer.util.FastIterableLocSet;
 import defaultplayer.util.Optimizer;
 
 import java.awt.*;
 import java.lang.reflect.Array;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.Map;
+import java.util.*;
 
 import static defaultplayer.Constants.*;
-import static defaultplayer.util.Optimizer.nearbyFlagHolder;
+import static defaultplayer.util.CheckWrapper.*;
+import static defaultplayer.util.Optimizer.*;
 
 
 public class Pathfind {
+    private static final MapLocation center = new MapLocation(mapWidth/2, mapHeight/2);
     private static MapLocation curTarget = null;
     private static boolean goingAroundObstacle = false;
     private static int obstacleStartDistSquared;
@@ -21,6 +22,12 @@ public class Pathfind {
     private static boolean obstacleTurningLeft;
 
     private static Direction DVDDir;
+
+    public static void spread(RobotController rc) throws GameActionException {
+        ArrayList<Direction> possible = new ArrayList<>();
+        for (Direction dir : DIRECTIONS) if (rc.canMove(dir)) possible.add(dir);
+        rc.move(possible.get(RANDOM.nextInt(possible.size())));
+    }
 
     public static void explore(RobotController rc) throws GameActionException {
         collectCrumbs(rc);
@@ -31,47 +38,61 @@ public class Pathfind {
 
     public static void exploreDVD(RobotController rc) throws GameActionException {
         if (!rc.isSpawned()) return; // <-- I don't quite need it but to make sure
-        if (DVDDir == null) DVDDir = DIRECTIONS[RANDOM.nextInt(8)];
-        for (MapInfo locInfo : rc.senseNearbyMapInfos()) {
-            MAP_LOC_SET.add(locInfo.getMapLocation());
-            if (locInfo.isDam()) {
-                for (MapInfo territory : rc.senseNearbyMapInfos()) {
-                    if (territory.getTeamTerritory() == rc.getTeam().opponent())
-                        ENEMY_BORDER_LINE.add(territory.getMapLocation());
-                    else if (territory.getTeamTerritory() == Team.NEUTRAL)
-                        NEUTRAL_BORDERLINE.add(territory.getMapLocation());
+        MapLocation current = rc.getLocation();
+        if (DVDDir == null) DVDDir = current.directionTo(center);
+        int revertDis = 5 - bfsInSight(rc, current);
+        for (int i = 0; i < revertDis; i ++) BORDERLINE.add(center);
+        if (rc.canMove(DVDDir)) {
+//            System.out.println("Entered here");
+            rc.move(DVDDir);
+        } else {
+//            System.out.println("Entered here");
+            Direction newDir = DVDDir;
+            for (int i = 0; i < 8; i ++ ){
+                newDir = myID % 2 == 0 ? newDir.rotateLeft() : newDir.rotateRight();
+                if (rc.canMove(newDir)) {
+                    rc.move(newDir);
+                    DVDDir = newDir;
+                    break;
                 }
             }
         }
-        ArrayList<Direction> possibleNextMoves = new ArrayList<Direction>();
-        Comparator<Direction> bestDirectionToExplore = new Comparator<Direction>() {
-            /* This Comparator sort directions decremental by number of new explorations
-                with tiebreaker by proximity to current direction
-            */
-            @Override
-            public int compare(Direction o1, Direction o2) {
-                MapLocation current = rc.getLocation();
-                try {
-                    int newCells1 = getNewLocationsInRange(rc, current.add(o1), -1);
-                    int newCells2 = getNewLocationsInRange(rc, current.add(o2), -1);
-                    Direction toCenter = current.directionTo(new MapLocation(mapWidth/2, mapHeight/2));
-                    if (newCells1 != newCells2) return Integer.compare(newCells2, newCells1);
-//                    else if (Integer.compare(Optimizer.nearDirection(toCenter, o1), Optimizer.nearDirection(toCenter, o2)) != 0){
-//                        return Integer.compare(Optimizer.nearDirection(toCenter, o1), Optimizer.nearDirection(toCenter, o2));
-//                    }
-                    else return Integer.compare(Optimizer.nearDirection(DVDDir, o2), Optimizer.nearDirection(DVDDir, o1));
-                } catch (GameActionException e) {
-                    throw new RuntimeException(e);
+    }
+
+    public static int bfsInSight(RobotController rc, MapLocation center) throws GameActionException {
+        Queue<MapLocation> queue = new LinkedList<>();
+        FastIterableLocSet visited = new FastIterableLocSet(1000);
+        FastIterableLocSet isWall = new FastIterableLocSet(50);
+        FastIterableLocSet isEnemyTerritory = new FastIterableLocSet(50);
+        FastIterableLocSet isNeutralTerritory = new FastIterableLocSet(50);
+        for (MapInfo mapInfo : rc.senseNearbyMapInfos(center)) {
+            if (mapInfo.isWall()) isWall.add(mapInfo.getMapLocation());
+            if (mapInfo.getTeamTerritory() == rc.getTeam().opponent()) isEnemyTerritory.add(mapInfo.getMapLocation());
+            if (mapInfo.getTeamTerritory() == Team.NEUTRAL) isNeutralTerritory.add(mapInfo.getMapLocation());
+        }
+        int distance = 0;
+        int neutral = Integer.MAX_VALUE;
+        queue.add(center);
+        while (!queue.isEmpty() && distance <= 3) {
+            int size = queue.size();
+            System.out.println(size);
+            for (int i = 0; i < size; i++) {
+                MapLocation loc = queue.remove();
+                visited.add(loc);
+                for (Direction dir : DIRECTIONS) {
+                    assert loc != null;
+                    MapLocation newLoc = loc.add(dir);
+                    if (!rc.canSenseLocation(newLoc) || visited.contains(newLoc)) continue;
+                    if (isEnemyTerritory.contains(newLoc) && !isWall.contains(newLoc)) return distance + 1;
+                    else if (isNeutralTerritory.contains(newLoc) && !isWall.contains(newLoc))
+                        neutral = Math.min(neutral, 2 * (distance + 1));
+                    if (Clock.getBytecodesLeft() < 500) return neutral;
+                    else queue.add(newLoc);
                 }
             }
-        };
-        for (Direction dir : DIRECTIONS) if (rc.canMove(dir)) possibleNextMoves.add(dir);
-        possibleNextMoves.sort(bestDirectionToExplore);
-        Direction[] sortedNextMoves = new Direction[possibleNextMoves.size()];
-        possibleNextMoves.toArray(sortedNextMoves);
-        for (Direction move : sortedNextMoves ) {
-            if (rc.canMove(move)) rc.move(move); break;
+            distance += 1;
         }
+        return neutral;
     }
 
     private static void collectCrumbs(RobotController rc) throws GameActionException {

@@ -32,6 +32,7 @@ public class Comms {
         for (int i = 0; i < 50; i++) {
             if (rc.readSharedArray(i) == 0){
                 rc.writeSharedArray(i, rc.getID());
+                myID = i + 1;
                 break;
             }
         }

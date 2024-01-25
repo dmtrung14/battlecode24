@@ -41,7 +41,6 @@ public class Setup {
         Comms.init(rc);
         mapWidth = rc.getMapWidth();
         mapHeight = rc.getMapHeight();
-        myID = Comms.incrementAndGetId(rc);
         SPAWN_ZONES = rc.getAllySpawnLocations();
         SPAWN_ZONE_CENTERS = new MapLocation[3];
         int numCenters = 0;
@@ -177,25 +176,21 @@ public class Setup {
             trySpawn();
         }
         if (isBuilder()) {
-            if (rc.getRoundNum() <= FLAG_RUSH_ROUNDS) {
-                moveFlag();
-            }
-            if (!afterBuildTrap) {
-                buildAroundFlags();
-            }
+            if (rc.getRoundNum() <= FLAG_RUSH_ROUNDS) moveFlag();
+            if (!afterBuildTrap) buildAroundFlags();
             digLand();
             Pathfind.moveToward(rc, ALLY_FLAGS[myID - 1], false);
         } else if (4 <= myID && myID <= 9) {
+            if (rc.getRoundNum() < 5) Pathfind.spread(rc);
             ALLY_FLAGS = Comms.getAllyFlagLocations(rc);
             MapLocation myFlag = ALLY_FLAGS[(myID - 4) / 2];
             Pathfind.moveToward(rc, myFlag, true);
-//            if (rc.getRoundNum() > FLAG_RUSH_ROUNDS) digLand2(myFlag);
         } else if (isExplorer()) {
-            if (rc.getRoundNum() <= 50) Pathfind.explore(rc);
+            if (rc.getRoundNum() <= 30) Pathfind.explore(rc);
             else if(rc.getRoundNum() <= EXPLORE_ROUNDS) Pathfind.exploreDVD(rc);
             else if (!isNearDam(rc)) {
                 MapLocation center = new MapLocation(mapWidth / 2, mapHeight / 2);
-                Pathfind.moveToward(rc, center, true);
+                Pathfind.moveToward(rc, !BORDERLINE.isEmpty() ? BORDERLINE.get(myID * 100 % BORDERLINE.size()) : center, true);
             } else if (rc.canBuild(TrapType.STUN, rc.getLocation())) {
                 rc.build(TrapType.STUN, rc.getLocation());
             }

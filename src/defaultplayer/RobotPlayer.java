@@ -1,6 +1,9 @@
 package defaultplayer;
 
 import battlecode.common.*;
+
+import static defaultplayer.Constants.myID;
+
 public strictfp class RobotPlayer {
     public static void run(RobotController rc) throws GameActionException {
         Setup setup = new Setup(rc);

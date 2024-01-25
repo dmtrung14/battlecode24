@@ -132,4 +132,6 @@ public class Optimizer {
         else if (tagDir.equals(ogDir.rotateLeft().rotateLeft().rotateLeft())) return 3;
         else return 4;
     }
+
+
 }

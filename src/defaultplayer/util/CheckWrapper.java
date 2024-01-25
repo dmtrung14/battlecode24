@@ -3,6 +3,10 @@ package defaultplayer.util;
 import battlecode.common.*;
 import defaultplayer.Comms;
 
+import java.awt.*;
+import java.util.Arrays;
+import java.util.Map;
+
 import static defaultplayer.Constants.*;
 import static defaultplayer.util.Optimizer.*;
 
@@ -34,11 +38,19 @@ public class CheckWrapper {
     }
     public static boolean isNearDam(RobotController rc) throws GameActionException {
         MapInfo[] nearby = rc.senseNearbyMapInfos(2);
-        for (MapInfo mapInfo : nearby){
-            if (mapInfo.isDam()) {
-                return true;
-            }
-        }
+        for (MapInfo mapInfo : nearby) if (mapInfo.isDam()) return true;
+        return false;
+    }
+
+    public static boolean isNearDam(RobotController rc, MapLocation center) throws GameActionException {
+        MapInfo[] nearby = rc.senseNearbyMapInfos(center, 2);
+        for (MapInfo mapInfo : nearby) if (mapInfo.isDam()) return true;
+        return false;
+    }
+
+    public static boolean isNearDam(RobotController rc, MapLocation center, int radius) throws GameActionException {
+        MapInfo[] nearby = rc.senseNearbyMapInfos(center, radius);
+        for (MapInfo mapInfo: nearby) if (mapInfo.isDam()) return true;
         return false;
     }
 
@@ -63,6 +75,15 @@ public class CheckWrapper {
             if (robot.hasFlag()) return true;
         }
         return false;
+    }
+
+    public static MapLocation[] borderline() throws GameActionException {
+        MapLocation[] result = new MapLocation[ENEMY_BORDER_LINE.size() * 2 + NEUTRAL_BORDERLINE.size()];
+        ENEMY_BORDER_LINE.addAll(ENEMY_BORDER_LINE);
+        ENEMY_BORDER_LINE.addAll(NEUTRAL_BORDERLINE);
+        ENEMY_BORDER_LINE.toArray(result);
+        Arrays.sort(result);
+        return result;
     }
 
 //    public static boolean hasObjective(RobotController rc) throws GameActionException {
