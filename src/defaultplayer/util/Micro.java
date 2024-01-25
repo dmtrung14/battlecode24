@@ -169,7 +169,9 @@ public class Micro {
         for (FlagInfo flag : nearbyFlags) {
             if (!flag.isPickedUp() && rc.canPickupFlag(flag.getLocation()) && rc.isMovementReady()) {
                 rc.pickupFlag(flag.getLocation());
-                tryReturnFlag(rc);
+                // we might be standing in our spawn zone already
+                if (!rc.hasFlag()) Comms.reportEnemyFlagCaptured(rc, flag.getID());
+                else tryReturnFlag(rc);
                 break;
             }
         }
@@ -177,13 +179,12 @@ public class Micro {
 
     public static void tryReturnFlag(RobotController rc) throws GameActionException {
         MapLocation spawnZone = nearestSpawnZone(rc);
-        // we must report the flag capture before the flag disappears
-        if (rc.isMovementReady() && rc.getLocation().isAdjacentTo(spawnZone)) {
-            FlagInfo[] flag = rc.senseNearbyFlags(0, rc.getTeam().opponent());
-            Comms.reportEnemyFlagCaptured(rc, flag[0].getID());
-        }
+        int flagId = rc.senseNearbyFlags(0, rc.getTeam().opponent())[0].getID();
         Pathfind.moveToward(rc, spawnZone, false);
-        if (rc.getLocation().equals(spawnZone)) return;
+        if (!rc.hasFlag()) {
+            Comms.reportEnemyFlagCaptured(rc, flagId);
+            return;
+        }
         if (!rc.isActionReady()) return;
         // try to ferry the flag
         Direction dir = Pathfind.bellmanFord(rc, spawnZone, false);
