@@ -192,7 +192,7 @@ public class Micro {
         MapLocation loc = rc.adjacentLocation(dir);
         RobotInfo[] allies = rc.senseNearbyRobots(loc, 2, rc.getTeam());
         for (RobotInfo ally : allies) {
-            if (ally.ID != myID && ally.health >= 500 && rc.canDropFlag(loc)) {
+            if (ally.ID != rc.getID() && ally.health >= 500 && rc.canDropFlag(loc)) {
                 rc.dropFlag(loc);
                 break;
             }
