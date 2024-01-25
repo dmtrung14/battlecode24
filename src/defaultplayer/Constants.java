@@ -38,12 +38,14 @@ public class Constants {
 
     public static Random RANDOM;
 
+    public static Team ALLY;
+    public static Team OPPONENT;
+
     public static ZoneInfo[] ZONE_INFO = new ZoneInfo[100];
 
-    public static FastIterableLocSet MAP_LOC_SET = new FastIterableLocSet(3600);
+    public static FastIterableLocSet EXPLORED = new FastIterableLocSet(200);
 
     public static ArrayList<MapLocation> ENEMY_BORDER_LINE = new ArrayList<MapLocation>();
     public static ArrayList<MapLocation> NEUTRAL_BORDERLINE = new ArrayList<MapLocation>();
 
-    public static ArrayList<MapLocation> BORDERLINE = new ArrayList<>();
 }

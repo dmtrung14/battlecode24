@@ -39,18 +39,27 @@ public class Pathfind {
     public static void exploreDVD(RobotController rc) throws GameActionException {
         if (!rc.isSpawned()) return; // <-- I don't quite need it but to make sure
         MapLocation current = rc.getLocation();
+        EXPLORED.add(current);
         bfsInSight(rc, current);
         if (DVDDir == null) DVDDir = current.directionTo(center);
-        if (rc.canMove(DVDDir)) {
+        MapLocation newLoc = current.add(DVDDir);
+        if (rc.canMove(DVDDir) && !EXPLORED.contains(newLoc)) {
             rc.move(DVDDir);
-        } else {
+        } else if ((newLoc.x + newLoc.y) % 2 == 0 && rc.canFill(newLoc)){
+            rc.fill(newLoc);
+            if (rc.canMove(DVDDir)) rc.move(DVDDir);
+        }else {
             Direction newDir = DVDDir;
             for (int i = 0; i < 8; i ++ ){
                 newDir = (myID + rc.getRoundNum()) % 2 == 0 ? newDir.rotateLeft() : newDir.rotateRight();
+                newLoc = current.add(newDir);
                 if (rc.canMove(newDir)) {
                     rc.move(newDir);
                     DVDDir = newDir;
                     break;
+                } else if ((newLoc.x + newLoc.y) % 2 == 0 && rc.canFill(newLoc)){
+                    rc.fill(newLoc);
+                    if (rc.canMove(newDir)) rc.move(newDir);
                 }
             }
         }
@@ -337,11 +346,4 @@ public class Pathfind {
         return new MapLocation(start.x + x - 3, start.y + y - 3);
     }
 
-    private static int getNewLocationsInRange(RobotController rc, MapLocation center, int radiusSquared) throws GameActionException {
-        int newLocations = 0;
-        for (MapLocation location : rc.getAllLocationsWithinRadiusSquared(center, radiusSquared)) {
-            if (!MAP_LOC_SET.contains(location)) newLocations += 1;
-        }
-        return newLocations;
-    }
 }

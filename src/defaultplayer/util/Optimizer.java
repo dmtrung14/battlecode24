@@ -23,32 +23,11 @@ public class Optimizer {
 
     public static MapLocation nearestFlag(RobotController rc) throws GameActionException {
         if (!rc.isSpawned()) return null;
-//        int minDistance = Integer.MAX_VALUE;
-//        MapLocation nearest = null;
-//        MapLocation current = rc.getLocation();
-//        // prioritize reported comms flags over flag pings
-//        for (MapLocation flag : ENEMY_FLAGS_COMMS) {
-//            int distance = current.distanceSquaredTo(flag);
-//            if (distance < minDistance) {
-//                nearest = flag;
-//                minDistance = distance;
-//            }
-//        }
-//        if (nearest != null) return nearest;
-//        for (MapLocation ping : ENEMY_FLAGS_PING) {
-//            int distance = current.distanceSquaredTo(ping);
-//            if (distance < minDistance) {
-//                nearest = ping;
-//                minDistance = distance;
-//            }
-//        }
-//        return nearest;
         MapLocation[] enemyFlags = new MapLocation[ENEMY_FLAGS_COMMS.length + ENEMY_FLAGS_PING.length];
         for (int i = 0; i < enemyFlags.length; i++) {
             if (i < ENEMY_FLAGS_COMMS.length) enemyFlags[i] = ENEMY_FLAGS_COMMS[i];
             else enemyFlags[i] = ENEMY_FLAGS_PING[i - ENEMY_FLAGS_COMMS.length];
         }
-//            if (myID < 10) return ALLY_FLAGS[myID % ALLY_FLAGS.length];
         int toGuard = toReturnAndGuard(rc);
         if (toGuard != -1) return ALLY_FLAGS[toGuard];
         return enemyFlags.length > 0 ? enemyFlags[myID % enemyFlags.length] : null;
@@ -103,6 +82,21 @@ public class Optimizer {
             }
         }
         return weakest;
+    }
+
+    public static RobotInfo weakestAllySurvive(RobotController rc) throws GameActionException {
+        if (!rc.isSpawned()) return null;
+        int minHealth = Integer.MAX_VALUE;
+        RobotInfo weakest = null;
+        for (RobotInfo robot : rc.senseNearbyRobots(4, rc.getTeam())) {
+            int health = robot.getHealth();
+            int numEnemies = rc.senseNearbyRobots(robot.getLocation(), 4, rc.getTeam().opponent()).length;
+            if (health + 80 - numEnemies * 150 > 0) {
+                weakest = robot;
+                minHealth = health;
+            }
+        }
+        return weakest != null ? weakest : weakestAlly(rc);
     }
 
     public static RobotInfo weakestEnemy(RobotController rc) throws GameActionException {

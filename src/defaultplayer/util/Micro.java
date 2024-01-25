@@ -11,6 +11,28 @@ import static defaultplayer.util.CheckWrapper.*;
 import static defaultplayer.util.Optimizer.*;
 
 public class Micro {
+    public static int action(RobotController rc) throws GameActionException {
+        int bestZone = -1;
+        double score = 0;
+        for (ZoneInfo zone : ZONE_INFO) {
+            int nearbyAllies = zone.getAllies();
+            int nearbyEnemies = zone.getEnemies();
+            double weight = zone.getWeight();
+            double zoneScore = nearbyEnemies != 0 ?
+                    heuristic((double) nearbyAllies/nearbyEnemies, weight) : 0;
+            System.out.println(zoneScore);
+            if (zoneScore > score) {
+                bestZone = zone.getAddress();
+                score = zoneScore;
+            }
+        }
+        return bestZone;
+    }
+
+    public static double heuristic(double ratio, double weight) {
+        double log2ratio = Math.abs(Math.log(ratio)/Math.log(2));
+        return log2ratio != 0 ? 1/log2ratio + weight : weight;
+    }
     public static int toAttack(RobotController rc) throws GameActionException {
         /* Return level of attack from 0 (retreat) to 3 (all out attack)*/
         /* attack based on distance to flag */
@@ -37,24 +59,16 @@ public class Micro {
     }
 
     public static void retreat(RobotController rc) throws GameActionException {
-        // TODO : handle which direction to retreat;
         MapLocation current = rc.getLocation();
-        RobotInfo[] nearbyEnemies = rc.senseNearbyRobots(10, rc.getTeam().opponent());
-        RobotInfo bestEnemy = null;
-        double bestScore = 0;
-        for (RobotInfo enemy : nearbyEnemies) {
-            double enemyScore = enemy.getAttackLevel() + (double) enemy.getHealth() * 0.002;
-            if (enemyScore > bestScore) {
-                bestScore = enemyScore;
-                bestEnemy = enemy;
-            }
+        int safest = Integer.MAX_VALUE;
+        Direction safestDir = Direction.CENTER;
+        for (Direction dir : DIRECTIONS) {
+            if (!rc.canMove(dir)) continue;
+            MapLocation newLoc = current.add(dir);
+            int numEnemies = rc.senseNearbyRobots(newLoc, 4, OPPONENT).length;
+            if (numEnemies < safest) safestDir = dir;
         }
-        if (bestEnemy != null) {
-            Direction awayFromEnemy = current.directionTo(bestEnemy.getLocation()).opposite();
-            if (rc.canMove(awayFromEnemy)) rc.move(awayFromEnemy);
-            else if (rc.canMove(awayFromEnemy.rotateRight())) rc.move(awayFromEnemy.rotateRight());
-            else if (rc.canMove(awayFromEnemy.rotateLeft())) rc.move(awayFromEnemy.rotateLeft());
-        }
+        if (rc.canMove(safestDir)) rc.move(safestDir);
     }
 
     public static void attackLv3(RobotController rc) throws GameActionException {
@@ -144,7 +158,7 @@ public class Micro {
 
     public static void tryHeal(RobotController rc) throws GameActionException {
         if (!rc.isSpawned()) return;
-        RobotInfo weakest = weakestAlly(rc);
+        RobotInfo weakest = weakestAllySurvive(rc);
         if (weakest == null) return;
         if (rc.canHeal(weakest.getLocation())) rc.heal(weakest.getLocation());
     }
@@ -212,6 +226,19 @@ public class Micro {
         ENEMY_FLAGS_PING = rc.senseBroadcastFlagLocations();
         ENEMY_FLAGS_COMMS = Comms.getEnemyFlagLocations(rc);
         ALLY_FLAGS = Comms.getAllyFlagLocations(rc);
+        updateZoneInfo(rc);
+    }
+
+    public static void updateZoneInfo(RobotController rc) throws GameActionException {
+        if (!rc.isSpawned()) return;
+        for (int i = 0; i < 100; i ++ ) {
+            ZONE_INFO[i].setZoneInfo(
+                    Comms.getZoneRobots(rc, i, ALLY),
+                    Comms.getZoneRobots(rc, i, OPPONENT),
+                    Comms.zoneHasTraps(rc, i)
+            );
+            ZONE_INFO[i].setWeight(rc);
+        }
     }
 
     public static int toReturnAndGuard(RobotController rc) throws GameActionException {

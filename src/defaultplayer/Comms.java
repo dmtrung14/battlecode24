@@ -216,6 +216,7 @@ public class Comms {
     }
 
     public static void reportZoneInfo(RobotController rc) throws GameActionException {
+        if (!rc.isSpawned()) return;
         MapLocation loc = rc.getLocation();
         RobotInfo[] robots = rc.senseNearbyRobots();
         int numAllies = 0;
@@ -228,14 +229,7 @@ public class Comms {
         setZoneRobots(rc, loc, rc.getTeam().opponent(), numEnemies);
     }
 
-    public static void updateZoneInfo(RobotController rc, int id) throws GameActionException {
-        if (!rc.isSpawned()) return;
-        Constants.ZONE_INFO[id].setZoneInfo(
-                getZoneRobots(rc, id, rc.getTeam()),
-                getZoneRobots(rc, id, rc.getTeam().opponent()),
-                zoneHasTraps(rc, id)
-        );
-    }
+
 
     private static int getBits32(RobotController rc, int arrayIndex) throws GameActionException {
         int a = rc.readSharedArray(arrayIndex);

@@ -41,6 +41,8 @@ public class Setup {
         mapHeight = rc.getMapHeight();
         SPAWN_ZONES = rc.getAllySpawnLocations();
         SPAWN_ZONE_CENTERS = new MapLocation[3];
+        ALLY = rc.getTeam();
+        OPPONENT = rc.getTeam().opponent();
         int numCenters = 0;
         for (MapLocation loc : SPAWN_ZONES) {
             boolean isCenter = true;
@@ -56,7 +58,7 @@ public class Setup {
             }
         }
         RANDOM = new Random(myID);
-        for (int i = 0; i < 100; i++) ZONE_INFO[i] = new ZoneInfo();
+        for (int i = 0; i < 100; i++) ZONE_INFO[i] = new ZoneInfo(i + 1);
     }
 
     public void initializeTurnQueue() throws GameActionException {
@@ -106,6 +108,7 @@ public class Setup {
         while (rc.hasFlag()) {
             if (rc.canDropFlag(rc.getLocation())) {
                 rc.dropFlag(rc.getLocation());
+                ZONE_INFO[ZoneInfo.getZoneId(rc.getLocation())].addFlag();
             }
             Clock.yield();
         }
@@ -172,14 +175,10 @@ public class Setup {
         if (isBuilder()) {
             if (rc.getRoundNum() <= FLAG_RUSH_ROUNDS) moveFlag();
             if (!afterBuildTrap) buildAroundFlags();
-            digLand();
+//            digLand();
             Pathfind.moveToward(rc, ALLY_FLAGS[myID - 1], false);
-        } else if (4 <= myID && myID <= 9) {
-            if (rc.getRoundNum() < 5) Pathfind.spread(rc);
-            ALLY_FLAGS = Comms.getAllyFlagLocations(rc);
-            MapLocation myFlag = ALLY_FLAGS[(myID - 4) / 2];
-            Pathfind.moveToward(rc, myFlag, true);
-        } else if (isExplorer()) {
+        }
+        else if (isExplorer()) {
             if (rc.getRoundNum() <= 30) Pathfind.explore(rc);
             else if(rc.getRoundNum() <= EXPLORE_ROUNDS) Pathfind.exploreDVD(rc);
             else if (!isNearDam(rc)) {
