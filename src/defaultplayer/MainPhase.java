@@ -18,7 +18,6 @@ public class MainPhase {
         this.builder = new Builder(rc);
     }
 
-
     public void run() throws GameActionException {
         tryBuyGlobal(rc);
         tryUpdateInfo(rc);
@@ -42,10 +41,16 @@ public class MainPhase {
 
             if (rc.hasFlag()) tryReturnFlag(rc);
             else {
-//                tryMoveAwayFromFlagHolder(rc);
+                // TODO: pass these variables as parameters to reduce bytecode use
                 FlagInfo[] nearbyEnemyFlags = rc.senseNearbyFlags(-1, rc.getTeam().opponent());
+                MapInfo[] mapInfos = rc.senseNearbyMapInfos();
+                RobotInfo[] allies = rc.senseNearbyRobots(-1, rc.getTeam());
+                RobotInfo[] enemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
+
+//                tryMoveAwayFromFlagHolder(rc);
                 tryCaptureFlag(rc, nearbyEnemyFlags);
                 tryAttack(rc);
+                tryBuildTrap(rc, mapInfos, allies, enemies);
                 moveTowardFlag(rc, builder, nearbyEnemyFlags);
                 if (!rc.isSpawned()) return;
                 tryHeal(rc);

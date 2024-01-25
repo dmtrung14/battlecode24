@@ -46,7 +46,6 @@ public class Optimizer {
         int minDistance = Integer.MAX_VALUE;
         MapLocation nearest = null;
         MapLocation current = rc.getLocation();
-        // prioritize reported comms flags over flag pings
         for (MapLocation flag : ALLY_FLAGS) {
             int distance = current.distanceSquaredTo(flag);
             if (distance < minDistance) {
@@ -122,6 +121,4 @@ public class Optimizer {
         else if (tagDir.equals(ogDir.rotateLeft().rotateLeft().rotateLeft())) return 3;
         else return 4;
     }
-
-
 }

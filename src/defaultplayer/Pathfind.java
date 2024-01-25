@@ -2,19 +2,15 @@ package defaultplayer;
 
 import battlecode.common.*;
 import defaultplayer.util.FastIterableLocSet;
-import defaultplayer.util.Optimizer;
+import defaultplayer.util.ZoneInfo;
 
-import java.awt.*;
-import java.lang.reflect.Array;
 import java.util.*;
 
 import static defaultplayer.Constants.*;
-import static defaultplayer.util.CheckWrapper.*;
 import static defaultplayer.util.Optimizer.*;
 
 
 public class Pathfind {
-    private static final MapLocation center = new MapLocation(mapWidth/2, mapHeight/2);
     private static MapLocation curTarget = null;
     private static boolean goingAroundObstacle = false;
     private static int obstacleStartDistSquared;
@@ -23,10 +19,16 @@ public class Pathfind {
 
     private static Direction DVDDir;
 
+    private static MapLocation center() {
+        return new MapLocation(mapWidth / 2, mapHeight / 2);
+    }
+
     public static void spread(RobotController rc) throws GameActionException {
         ArrayList<Direction> possible = new ArrayList<>();
         for (Direction dir : DIRECTIONS) if (rc.canMove(dir)) possible.add(dir);
-        rc.move(possible.get(RANDOM.nextInt(possible.size())));
+        if (!possible.isEmpty()) {
+            rc.move(possible.get(RANDOM.nextInt(possible.size())));
+        }
     }
 
     public static void explore(RobotController rc) throws GameActionException {
@@ -114,18 +116,20 @@ public class Pathfind {
     }
 
     private static void moveAwayFromAllies(RobotController rc) throws GameActionException {
+        moveAwayFromTeam(rc, rc.getTeam());
+    }
+
+    public static void moveAwayFromTeam(RobotController rc, Team team) throws GameActionException {
         if (!rc.isSpawned()) return;
         MapLocation loc = rc.getLocation();
-        RobotInfo[] allies = rc.senseNearbyRobots(-1, rc.getTeam());
-        if (allies.length > 0) {
-            for (RobotInfo ally : allies) {
-                Direction dir = rc.getLocation().directionTo(ally.location).opposite();
-                loc = loc.add(dir);
-            }
-            if (!rc.getLocation().equals(loc)) {
-                Direction dir = rc.getLocation().directionTo(loc);
-                if (rc.canMove(dir)) rc.move(dir);
-            }
+        RobotInfo[] robots = rc.senseNearbyRobots(-1, team);
+        for (RobotInfo robot : robots) {
+            Direction dir = rc.getLocation().directionTo(robot.location).opposite();
+            loc = loc.add(dir);
+        }
+        if (!rc.getLocation().equals(loc)) {
+            Direction dir = rc.getLocation().directionTo(loc);
+            if (rc.canMove(dir)) rc.move(dir);
         }
     }
 
@@ -139,6 +143,10 @@ public class Pathfind {
     }
 
     public static void moveToward(RobotController rc, MapLocation target, boolean fill) throws GameActionException {
+        moveToward(rc, target, fill, false);
+    }
+
+    public static void moveToward(RobotController rc, MapLocation target, boolean fill, boolean safe) throws GameActionException {
         if (!rc.isSpawned()) return;
         if (!rc.isMovementReady()) return;
         if (rc.getLocation().equals(target)) return;
@@ -147,7 +155,7 @@ public class Pathfind {
             goingAroundObstacle = false;
         }
         rc.setIndicatorDot(target, 255, 0, 0);
-        Direction bestDir = bellmanFord(rc, target, fill);
+        Direction bestDir = bellmanFord(rc, target, fill, safe);
         if (bestDir != null) {
             FlagInfo[] flags = rc.senseNearbyFlags(-1, rc.getTeam().opponent());
             int leftDist = rc.adjacentLocation(bestDir.rotateLeft().rotateLeft()).distanceSquaredTo(target);
@@ -224,7 +232,7 @@ public class Pathfind {
         }
     }
 
-    public static Direction bellmanFord(RobotController rc, MapLocation target, boolean fill) throws GameActionException {
+    public static Direction bellmanFord(RobotController rc, MapLocation target, boolean fill, boolean safe) throws GameActionException {
         if (!rc.isSpawned()) return null;
         if (rc.getLocation().equals(target)) return null;
         MapLocation start = rc.getLocation();
@@ -254,7 +262,7 @@ public class Pathfind {
             targetBit = coordsToBit(x, y);
         } else {
             // use a heuristic to pick a square on the vision boundary to move to
-            targetBit = findBestTarget(reachable, start, target);
+            targetBit = findBestTarget(reachable, start, target, safe);
         }
 
         if (!isReachable(reachable, targetBit)) return null;
@@ -279,7 +287,7 @@ public class Pathfind {
         return minDir;
     }
 
-    private static long findBestTarget(long[] reachable, MapLocation start, MapLocation target) {
+    private static long findBestTarget(long[] reachable, MapLocation start, MapLocation target, boolean safe) {
 //        long VISION_BOUNDARY = 0xFF818181818181FFL;
         long VISION_BOUNDARY = 0xFF818181818386FCL;
         double bestHeuristic = Double.MIN_VALUE;
@@ -294,6 +302,12 @@ public class Pathfind {
                     MapLocation loc = coordsToLoc(start, x, y);
                     double newDist = Math.sqrt(loc.distanceSquaredTo(target));
                     double heuristic = (initialDist - newDist) / cost;
+                    if (safe) {
+                        int zoneId = ZoneInfo.getZoneId(loc);
+                        ZoneInfo info = ZONE_INFO[zoneId];
+                        double enemies = info.getEnemies();
+                        heuristic += 1 / (1 + enemies);
+                    }
                     if (heuristic > bestHeuristic) {
                         bestHeuristic = heuristic;
                         bestTargetBit = locBit;
