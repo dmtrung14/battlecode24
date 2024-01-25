@@ -224,7 +224,9 @@ public class Pathfind {
         }
     }
 
-    private static Direction bellmanFord(RobotController rc, MapLocation target, boolean fill) throws GameActionException {
+    public static Direction bellmanFord(RobotController rc, MapLocation target, boolean fill) throws GameActionException {
+        if (!rc.isSpawned()) return null;
+        if (rc.getLocation().equals(target)) return null;
         MapLocation start = rc.getLocation();
         long START_BIT = coordsToBit(3, 3);
         long[] reachable = new long[15];

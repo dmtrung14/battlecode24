@@ -3,14 +3,10 @@ package defaultplayer.util;
 import battlecode.common.*;
 import defaultplayer.Constants;
 
-import java.util.Arrays;
-import java.util.Comparator;
-
 import static defaultplayer.Constants.*;
 import static defaultplayer.util.Micro.*;
 
 public class Optimizer {
-
     public static MapLocation nearestSpawnZone(RobotController rc) {
         if (!rc.isSpawned()) return null;
         int minDistance = Integer.MAX_VALUE;

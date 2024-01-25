@@ -41,9 +41,11 @@ public class MainPhase {
             // TODO : Configure the logic for the order of attack, movement when flag is in danger.
             if (rc.hasFlag()) tryReturnFlag(rc);
             else {
-                tryMoveAwayFromFlagHolder(rc);
+//                tryMoveAwayFromFlagHolder(rc);
+                FlagInfo[] nearbyEnemyFlags = rc.senseNearbyFlags(-1, rc.getTeam().opponent());
+                tryCaptureFlag(rc, nearbyEnemyFlags);
                 tryAttack(rc);
-                tryCaptureFlag(rc, builder);
+                moveTowardFlag(rc, builder, nearbyEnemyFlags);
                 if (!rc.isSpawned()) return;
                 tryHeal(rc);
                 MapLocation nearestFlag = nearestFlag(rc);

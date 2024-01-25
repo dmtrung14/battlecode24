@@ -65,13 +65,13 @@ public class Micro {
         if (current.distanceSquaredTo(weakestEnemyLoc) <= 4) {
             // then attack, and walk out.
             if (rc.isActionReady()) rc.attack(weakestEnemyLoc);
-            if (rc.getLevel(SkillType.ATTACK) == 6 && rc.isActionReady() && rc.canAttack(weakestEnemyLoc)) {
+            if (rc.getLevel(SkillType.ATTACK) == 6 && rc.canAttack(weakestEnemyLoc)) {
                 rc.attack(weakestEnemyLoc);
             }
             retreat(rc);
         } else if (current.distanceSquaredTo(weakestEnemyLoc) <= 7 && rc.isActionReady()) {
             Pathfind.moveToward(rc, weakestEnemyLoc, false);
-            if (rc.isActionReady() && rc.canAttack(weakestEnemyLoc)) rc.attack(weakestEnemyLoc);
+            if (rc.canAttack(weakestEnemyLoc)) rc.attack(weakestEnemyLoc);
             tryHeal(rc);
         }
         else if (current.distanceSquaredTo(weakestEnemyLoc) <= 10) {
@@ -107,7 +107,6 @@ public class Micro {
             tryHeal(rc);
         }
     }
-
 
     public static void attackLv1(RobotController rc) throws GameActionException {
         RobotInfo weakestEnemy = nearestEnemy(rc);
@@ -156,38 +155,48 @@ public class Micro {
         if (flagHolder != null) Pathfind.moveAwayFrom(rc, flagHolder);
     }
 
-    public static void tryCaptureFlag(RobotController rc, Builder builder) throws GameActionException {
+    public static void moveTowardFlag(RobotController rc, Builder builder, FlagInfo[] flags) throws GameActionException {
         if (!rc.isSpawned()) return;
-        FlagInfo[] flags = rc.senseNearbyFlags(-1, rc.getTeam().opponent());
-//        if (flags.length > 0 && !flags[0].isPickedUp()){
-//            Pathfind.moveToward(rc, flags[0].getLocation(), true);
-//            if (rc.canPickupFlag(flags[0].getLocation())) rc.pickupFlag(flags[0].getLocation());
-//        } else if (flags.length > 0 && flags[0].isPickedUp()) {
+        if (flags.length > 0) Pathfind.moveToward(rc, flags[0].getLocation(), true);
+//        if (flags.length > 0 && !rc.hasFlag()) {
 //            builder.clearWaterForFlag(flags[0].getLocation(), nearestSpawnZone(rc));
 //            Pathfind.moveToward(rc, nearestSpawnZone(rc), true);
 //        }
-        if (flags.length > 0) {
-            for (FlagInfo flag : flags) {
-                if (!flag.isPickedUp()) {
-                    Pathfind.moveToward(rc, flag.getLocation(), true);
-                    if (rc.canPickupFlag(flag.getLocation())) rc.pickupFlag(flag.getLocation());
-                }
-            }
-            if (!rc.hasFlag()) {
-                builder.clearWaterForFlag(flags[0].getLocation(), nearestSpawnZone(rc));
-                Pathfind.moveToward(rc, nearestSpawnZone(rc), true);
+    }
+
+    public static void tryCaptureFlag(RobotController rc, FlagInfo[] nearbyFlags) throws GameActionException {
+        if (!rc.isSpawned()) return;
+        for (FlagInfo flag : nearbyFlags) {
+            if (!flag.isPickedUp() && rc.canPickupFlag(flag.getLocation()) && rc.isMovementReady()) {
+                rc.pickupFlag(flag.getLocation());
+                // we might be standing in our spawn zone already
+                if (!rc.hasFlag()) Comms.reportEnemyFlagCaptured(rc, flag.getID());
+                else tryReturnFlag(rc);
+                break;
             }
         }
     }
 
     public static void tryReturnFlag(RobotController rc) throws GameActionException {
         MapLocation spawnZone = nearestSpawnZone(rc);
-        // we must report the flag capture before the flag disappears
-        if (rc.isMovementReady() && rc.getLocation().isAdjacentTo(spawnZone)) {
-            FlagInfo[] flag = rc.senseNearbyFlags(0, rc.getTeam().opponent());
-            Comms.reportEnemyFlagCaptured(rc, flag[0].getID());
-        }
+        int flagId = rc.senseNearbyFlags(0, rc.getTeam().opponent())[0].getID();
         Pathfind.moveToward(rc, spawnZone, false);
+        if (!rc.hasFlag()) {
+            Comms.reportEnemyFlagCaptured(rc, flagId);
+            return;
+        }
+        if (!rc.isActionReady()) return;
+        // try to ferry the flag
+        Direction dir = Pathfind.bellmanFord(rc, spawnZone, false);
+        if (dir == null) return;
+        MapLocation loc = rc.adjacentLocation(dir);
+        RobotInfo[] allies = rc.senseNearbyRobots(loc, 2, rc.getTeam());
+        for (RobotInfo ally : allies) {
+            if (ally.ID != rc.getID() && ally.health >= 500 && rc.canDropFlag(loc)) {
+                rc.dropFlag(loc);
+                break;
+            }
+        }
     }
 
     public static void tryBuyGlobal(RobotController rc) throws GameActionException {
@@ -195,7 +204,6 @@ public class Micro {
         else if (rc.canBuyGlobal(GlobalUpgrade.HEALING)) rc.buyGlobal(GlobalUpgrade.HEALING);
         else if (rc.canBuyGlobal(GlobalUpgrade.CAPTURING)) rc.buyGlobal(GlobalUpgrade.CAPTURING);
     }
-
 
     public static void tryUpdateInfo(RobotController rc) throws GameActionException {
         if (!rc.isSpawned()) return;
