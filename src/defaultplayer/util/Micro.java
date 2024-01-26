@@ -11,28 +11,19 @@ import static defaultplayer.util.CheckWrapper.*;
 import static defaultplayer.util.Optimizer.*;
 
 public class Micro {
-    public static int action(RobotController rc) throws GameActionException {
+    public static int action(RobotController rc) {
         int bestZone = -1;
-        double score = 0;
+        double bestScore = Double.NEGATIVE_INFINITY;
         for (ZoneInfo zone : ZONE_INFO) {
-            int nearbyAllies = zone.getAllies();
-            int nearbyEnemies = zone.getEnemies();
-            double weight = zone.getWeight();
-            double zoneScore = nearbyEnemies != 0 ?
-                    heuristic((double) nearbyAllies/nearbyEnemies, weight) : 0;
-            System.out.println(zoneScore);
-            if (zoneScore > score) {
+            double score = zone.getScore();
+            if (score > bestScore) {
+                bestScore = score;
                 bestZone = zone.getAddress();
-                score = zoneScore;
             }
         }
         return bestZone;
     }
 
-    public static double heuristic(double ratio, double weight) {
-        double log2ratio = Math.abs(Math.log(ratio)/Math.log(2));
-        return log2ratio != 0 ? 1/log2ratio + weight : weight;
-    }
     public static int toAttack(RobotController rc) throws GameActionException {
         /* Return level of attack from 0 (retreat) to 3 (all out attack)*/
         /* attack based on distance to flag */
@@ -249,7 +240,21 @@ public class Micro {
                     Comms.getZoneRobots(rc, i, OPPONENT),
                     Comms.zoneHasTraps(rc, i)
             );
-            ZONE_INFO[i].setWeight(rc);
+            ZONE_INFO[i].updateWeight(rc);
+            ZONE_INFO[i].resetFlags(ALLY);
+            ZONE_INFO[i].resetFlags(OPPONENT);
+        }
+        for (MapLocation loc : ENEMY_FLAGS_PING) {
+            int id = ZoneInfo.getZoneId(loc);
+            ZONE_INFO[id].addFlag(OPPONENT);
+        }
+        for (MapLocation loc : ENEMY_FLAGS_COMMS) {
+            int id = ZoneInfo.getZoneId(loc);
+            ZONE_INFO[id].addFlag(OPPONENT);
+        }
+        for (MapLocation loc : ALLY_FLAGS) {
+            int id = ZoneInfo.getZoneId(loc);
+            ZONE_INFO[id].addFlag(ALLY);
         }
     }
 

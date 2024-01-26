@@ -1,76 +1,109 @@
 package defaultplayer.util;
 
 import battlecode.common.*;
-import defaultplayer.Comms;
 import defaultplayer.Constants;
 
 import java.util.*;
 
+import static defaultplayer.Constants.ALLY;
+
 public class ZoneInfo {
-    private int address;
-    private int flags;
+    private final int address;
+    private final int zoneX;
+    private final int zoneY;
     private int allies;
     private int enemies;
     private boolean traps;
+    private int allyFlags;
+    private int enemyFlags;
 
     private double weight;
+
     public ZoneInfo(int add) {
-        this.address = add;
-        this.allies = 0;
-        this.enemies = 0;
-        this.traps = false;
-        this.weight = 1;
-        this.flags = 0;
+        address = add;
+        zoneX = add / 10;
+        zoneY = add % 10;
+        allies = 0;
+        enemies = 0;
+        traps = false;
+        allyFlags = 0;
+        enemyFlags = 0;
+        weight = 1;
     }
 
-    public int getAddress() { return this.address;}
+    public int getAddress() { return this.address; }
 
     public int getAllies() {
         return this.allies;
-    }
-
-    public int getEnemies() {
-        return this.enemies;
-    }
-
-    public boolean hasTraps() {
-        return this.traps;
-    }
-
-    public double getWeight() { return this.weight;}
-
-    public int getFlags() {return this.flags;}
-
-    public void setAddress(int address) {
-        this.address = address;
     }
 
     public void setAllies(int allies) {
         this.allies = allies;
     }
 
-    public void setEnemies(int enemies){
+    public int getEnemies() {
+        return this.enemies;
+    }
+
+    public void setEnemies(int enemies) {
         this.enemies = enemies;
+    }
+
+    public boolean hasTraps() {
+        return this.traps;
     }
 
     public void setTraps(boolean traps) {
         this.traps = traps;
     }
 
-    public void addFlag() {this.flags += 1;}
-
     public void setZoneInfo(int allies, int enemies, boolean traps) {
         this.allies = allies;
         this.enemies = enemies;
         this.traps = traps;
     }
-    public MapLocation getCenter(){
-        int zoneX = address/10;
-        int zoneY = address%10;
+
+    public int getFlags(Team team) { return team == ALLY ? allyFlags : enemyFlags; }
+
+    public void resetFlags(Team team) {
+        if (team == ALLY) allyFlags = 0;
+        else enemyFlags = 0;
+    }
+
+    public void addFlag(Team team) {
+        if (team == ALLY) allyFlags++;
+        else enemyFlags++;
+    }
+
+    public MapLocation getCenter() {
         int zoneWidth = (int) (Constants.mapWidth * 0.1);
         int zoneHeight = (int) (Constants.mapHeight * 0.1);
-        return new MapLocation(zoneX + zoneWidth/2, zoneY + zoneHeight/2);
+        return new MapLocation(zoneX * zoneWidth + zoneWidth / 2, zoneY * zoneHeight + zoneHeight / 2);
     }
+
+    public double getWeight() { return this.weight; }
+
+    public void updateWeight(RobotController rc) {
+        if (!rc.isSpawned()) return;
+        int zoneOfRobot = getZoneId(rc.getLocation());
+        int zoneOfRobotX = zoneOfRobot / 10;
+        int zoneOfRobotY = zoneOfRobot % 10;
+        int dist = Math.abs(zoneOfRobotX - zoneX) + Math.abs(zoneOfRobotY - zoneY);
+//        this.weight = Math.exp(flags) / dist;
+        this.weight = 3 * (allyFlags + enemyFlags) - dist;
+    }
+
+    public double getScore() {
+//        return enemies != 0 ?
+//                heuristic((double) allies / enemies, weight) : 0;
+        return weight - Math.abs(allies - enemies);
+    }
+
+//    private static double heuristic(double ratio, double weight) {
+//        double log2ratio = Math.abs(Math.log(ratio) / Math.log(2));
+//        return log2ratio != 0 ? 1 / log2ratio + weight : Double.POSITIVE_INFINITY;
+//    }
+
     public static int getZoneId(MapLocation location) {
         double zoneWidth = Constants.mapWidth * 0.1;
         double zoneHeight = Constants.mapHeight * 0.1;
@@ -78,15 +111,7 @@ public class ZoneInfo {
         int zoneY = (int) Math.floor(location.y / zoneHeight);
         return zoneX * 10 + zoneY;
     }
-    public void setWeight(RobotController rc) {
-        if (!rc.isSpawned()) return;
-        int ZoneOfRobot = getZoneId(rc.getLocation());
-        int ZoneOfRobot_x = ZoneOfRobot / 10;
-        int ZoneOfRobot_y = ZoneOfRobot % 10;
-        int Zonex = address/10;
-        int Zoney = address%10;
-        this.weight = Math.exp(getFlags()) / (Math.abs(ZoneOfRobot_x - Zonex) + Math.abs(ZoneOfRobot_y - Zoney));
-    }
+
     public static Integer[] getNeighbors(int zoneID) {
         int row = zoneID / 10;
         int col = zoneID % 10;

@@ -58,7 +58,7 @@ public class Setup {
             }
         }
         RANDOM = new Random(myID);
-        for (int i = 0; i < 100; i++) ZONE_INFO[i] = new ZoneInfo(i + 1);
+        for (int i = 0; i < 100; i++) ZONE_INFO[i] = new ZoneInfo(i);
     }
 
     public void initializeTurnQueue() throws GameActionException {
@@ -108,7 +108,6 @@ public class Setup {
         while (rc.hasFlag()) {
             if (rc.canDropFlag(rc.getLocation())) {
                 rc.dropFlag(rc.getLocation());
-                ZONE_INFO[ZoneInfo.getZoneId(rc.getLocation())].addFlag();
             }
             Clock.yield();
         }

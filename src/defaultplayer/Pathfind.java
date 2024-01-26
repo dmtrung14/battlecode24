@@ -43,7 +43,7 @@ public class Pathfind {
         MapLocation current = rc.getLocation();
         EXPLORED.add(current);
         bfsInSight(rc, current);
-        if (DVDDir == null) DVDDir = current.directionTo(center);
+        if (DVDDir == null) DVDDir = current.directionTo(center());
         MapLocation newLoc = current.add(DVDDir);
         if (rc.canMove(DVDDir) && !EXPLORED.contains(newLoc)) {
             rc.move(DVDDir);
