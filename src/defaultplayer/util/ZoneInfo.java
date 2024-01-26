@@ -89,20 +89,17 @@ public class ZoneInfo {
         int zoneOfRobotX = zoneOfRobot / 10;
         int zoneOfRobotY = zoneOfRobot % 10;
         int dist = Math.abs(zoneOfRobotX - zoneX) + Math.abs(zoneOfRobotY - zoneY);
-//        this.weight = Math.exp(flags) / dist;
-        this.weight = 3 * (allyFlags + enemyFlags) - dist;
+        this.weight = (double) (Math.sqrt(allyFlags) + Math.pow(enemyFlags, 2) + 1)/(dist + 1);
     }
 
     public double getScore() {
-//        return enemies != 0 ?
-//                heuristic((double) allies / enemies, weight) : 0;
-        return weight - Math.abs(allies - enemies);
+        return enemies != 0 ? heuristic((double) allies / (enemies + 1), weight) : 0;
     }
 
-//    private static double heuristic(double ratio, double weight) {
-//        double log2ratio = Math.abs(Math.log(ratio) / Math.log(2));
-//        return log2ratio != 0 ? 1 / log2ratio + weight : Double.POSITIVE_INFINITY;
-//    }
+    private static double heuristic(double ratio, double weight) {
+        double log2ratio = Math.abs(Math.log(ratio) / Math.log(3));
+        return 1 - Math.pow(log2ratio, 1.5) + weight;
+    }
 
     public static int getZoneId(MapLocation location) {
         double zoneWidth = Constants.mapWidth * 0.1;
@@ -123,7 +120,7 @@ public class ZoneInfo {
         for (int i = row - 1; i <= row + 1; i++) {
             for (int j = col - 1; j <= col + 1; j++) {
                 // Skip out-of-bounds cells and the cell itself
-                if (0 <= i && i < 10 && 0 <= j && j < 10 && !(i == row && j == col)) {
+                if (0 <= i && i < 10 && 0 <= j && j < 10) {
                     // Calculate neighbor number and add it to the list
                     int neighborNum = i * 10 + j;
                     neighbors.add(neighborNum);

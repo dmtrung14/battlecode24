@@ -31,62 +31,49 @@ public class Pathfind {
         }
     }
 
-    public static void explore(RobotController rc) throws GameActionException {
+    public static void explore(RobotController rc, RobotInfo[] robots) throws GameActionException {
         collectCrumbs(rc);
         moveAwayFromEdge(rc);
-        moveAwayFromAllies(rc);
+        moveAwayFromAllies(rc, robots);
         moveRandomly(rc);
     }
 
-//    public static void exploreDVD(RobotController rc) throws GameActionException {
-//        if (!rc.isSpawned()) return; // <-- I don't quite need it but to make sure
-//        MapLocation current = rc.getLocation();
-//        EXPLORED.add(current);
-//        bfsInSight(rc, current);
-//        if (DVDDir == null) DVDDir = current.directionTo(center());
-//        MapLocation newLoc = current.add(DVDDir);
-//        if (rc.canMove(DVDDir) && !EXPLORED.contains(newLoc)) {
-//            rc.move(DVDDir);
-//        } else if ((newLoc.x + newLoc.y) % 2 == 0 && rc.canFill(newLoc)){
-//            rc.fill(newLoc);
-//            if (rc.canMove(DVDDir)) rc.move(DVDDir);
-//        }else {
-//            Direction newDir = DVDDir;
-//            Direction moveDir = null;
-//            for (int i = 0; i < 8; i ++ ){
-//                newDir = (myID + rc.getRoundNum()) % 2 == 0 ? newDir.rotateLeft() : newDir.rotateRight();
-//                newLoc = current.add(newDir);
-//                if (rc.canMove(newDir)) {
-//                    if (!EXPLORED.contains(newLoc)) {
-//                        rc.move(newDir);
-//                        DVDDir = newDir;
-//                        return;
-//                    } else if (moveDir == null) {
-//                        moveDir = newDir;
-//                    }
-//                }
-//                else if ((newLoc.x + newLoc.y) % 2 == 0 && rc.canFill(newLoc)){
-//                    rc.fill(newLoc);
-//                    if (rc.canMove(newDir)) rc.move(newDir);
-//                }
-//            }
-//            rc.move(moveDir);
-//        }
-//    }
     public static void exploreDVD(RobotController rc) throws GameActionException {
-        if (!rc.isSpawned()) return;
+        if (!rc.isSpawned()) return; // <-- I don't quite need it but to make sure
         MapLocation current = rc.getLocation();
-        Direction dir = DIRECTIONS[RANDOM.nextInt(8)];
+        EXPLORED.add(current);
         bfsInSight(rc, current);
-        if (rc.canMove(dir)) rc.move(dir);
-        else {
-            Direction tempDir = dir;
-            for (int i = 0; i < 8; i ++) {
-                tempDir = tempDir.rotateLeft();
-                if (rc.canMove(tempDir)) rc.move(tempDir);
+        if (DVDDir == null) DVDDir = current.directionTo(center());
+        MapLocation newLoc = current.add(DVDDir);
+        if (rc.canMove(DVDDir) && !EXPLORED.contains(newLoc)) {
+            rc.move(DVDDir);
+        } else if ((newLoc.x + newLoc.y) % 2 == 0 && rc.canFill(newLoc)){
+            rc.fill(newLoc);
+            if (rc.canMove(DVDDir)) rc.move(DVDDir);
+        }else {
+            Direction newDir = DVDDir;
+            Direction moveDir = null;
+            for (int i = 0; i < 8; i ++ ){
+                newDir = (myID + rc.getRoundNum()) % 2 == 0 ? newDir.rotateLeft() : newDir.rotateRight();
+                newLoc = current.add(newDir);
+                if (rc.canMove(newDir)) {
+                    if (!EXPLORED.contains(newLoc)) {
+                        rc.move(newDir);
+                        DVDDir = newDir;
+                        return;
+                    } else if (moveDir == null) {
+                        moveDir = newDir;
+                    }
+                }
+                else if ((newLoc.x + newLoc.y) % 2 == 0 && rc.canFill(newLoc)){
+                    rc.fill(newLoc);
+                    if (rc.canMove(newDir)) rc.move(newDir);
+                }
             }
+            if (moveDir != null && rc.canMove(moveDir)) rc.move(moveDir);
         }
     }
+
 
     public static void bfsInSight(RobotController rc, MapLocation center) throws GameActionException {
         Queue<MapLocation> queue = new LinkedList<>();
@@ -137,14 +124,13 @@ public class Pathfind {
         if (!rc.getLocation().equals(loc)) moveToward(rc, loc, true);
     }
 
-    private static void moveAwayFromAllies(RobotController rc) throws GameActionException {
-        moveAwayFromTeam(rc, ALLY);
+    private static void moveAwayFromAllies(RobotController rc, RobotInfo[] robots) throws GameActionException {
+        moveAwayFromTeam(rc, ALLY, robots);
     }
 
-    public static void moveAwayFromTeam(RobotController rc, Team team) throws GameActionException {
+    public static void moveAwayFromTeam(RobotController rc, Team team, RobotInfo[] robots) throws GameActionException {
         if (!rc.isSpawned()) return;
         MapLocation loc = rc.getLocation();
-        RobotInfo[] robots = rc.senseNearbyRobots(-1, team);
         for (RobotInfo robot : robots) {
             Direction dir = rc.getLocation().directionTo(robot.location).opposite();
             loc = loc.add(dir);

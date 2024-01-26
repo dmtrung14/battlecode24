@@ -183,7 +183,11 @@ public class Setup {
             Pathfind.moveToward(rc, ALLY_FLAGS[myID - 1], false);
         }
         else if (isExplorer()) {
-            if (rc.getRoundNum() <= 30) Pathfind.explore(rc);
+            FlagInfo[] nearbyEnemyFlags = rc.senseNearbyFlags(-1, OPPONENT);
+            MapInfo[] mapInfos = rc.senseNearbyMapInfos();
+            RobotInfo[] allies = rc.senseNearbyRobots(-1, ALLY);
+            RobotInfo[] enemies = rc.senseNearbyRobots(-1, OPPONENT);
+            if (rc.getRoundNum() <= 30) Pathfind.explore(rc, allies);
             else if(rc.getRoundNum() <= EXPLORE_ROUNDS) {
                 Pathfind.exploreDVD(rc);
             }
