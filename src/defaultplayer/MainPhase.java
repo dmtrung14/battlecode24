@@ -32,22 +32,15 @@ public class MainPhase {
                 tryAttack(rc);
             }
         }
-//        else if (isGuard()) {
-//            Pathfind.moveToward(rc, ALLY_FLAGS[(myID - 4)/2], true);
-//            tryAttack(rc);
-//        }
         else if (isExplorer()) {
             // TODO : Configure the logic for the order of attack, movement when flag is in danger.
-
             if (rc.hasFlag()) tryReturnFlag(rc);
             else {
                 // TODO: pass these variables as parameters to reduce bytecode use
-                FlagInfo[] nearbyEnemyFlags = rc.senseNearbyFlags(-1, rc.getTeam().opponent());
+                FlagInfo[] nearbyEnemyFlags = rc.senseNearbyFlags(-1, OPPONENT);
                 MapInfo[] mapInfos = rc.senseNearbyMapInfos();
-                RobotInfo[] allies = rc.senseNearbyRobots(-1, rc.getTeam());
-                RobotInfo[] enemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
-
-//                tryMoveAwayFromFlagHolder(rc);
+                RobotInfo[] allies = rc.senseNearbyRobots(-1, ALLY);
+                RobotInfo[] enemies = rc.senseNearbyRobots(-1, OPPONENT);
                 tryCaptureFlag(rc, nearbyEnemyFlags);
                 tryAttack(rc);
                 tryBuildTrap(rc, mapInfos, allies, enemies);
@@ -55,22 +48,11 @@ public class MainPhase {
                 if (!rc.isSpawned()) return;
                 tryHeal(rc);
                 int actionZone = action(rc);
-//                rc.setIndicatorString(Integer.toString(actionZone));
                 Pathfind.moveToward(rc, ZONE_INFO[actionZone].getCenter(), true);
-//                if (actionZone != -1) {
-//                    Pathfind.moveToward(rc, ZONE_INFO[actionZone].getCenter(), true);
-//                    tryAttack(rc);
-//                } else {
-//                    MapLocation nearestFlag = nearestFlag(rc);
-//                    if (nearestFlag != null) Pathfind.moveToward(rc, nearestFlag, true);
-//                    else Pathfind.moveToward(rc, new MapLocation(mapWidth / 2, mapHeight / 2), true);
-//                }
-
                 if (!rc.isSpawned()) return;
                 Pathfind.exploreDVD(rc);
             }
             Comms.reportZoneInfo(rc);
-//            rc.setIndicatorString(Integer.toString(myID));
         }
     }
 }

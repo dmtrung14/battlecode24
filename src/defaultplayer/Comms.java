@@ -19,19 +19,27 @@ public class Comms {
 
     private static final int NULL_FLAG_ID = 0xFFF;
 
+    public static int readSharedArrayBuffer(int index) {
+        return BUFFER[index];
+    }
+
+    public static void writeSharedArrayBuffer(int index, int value) {
+        BUFFER[index] = value;
+    }
+
     public static void init(RobotController rc) throws GameActionException {
         // initially every symmetry is possible
         setBits(rc, SYM_INDEX, 0b111, 3);
         for (int i = 0; i < 3; i++) {
             setEnemyFlagId(rc, i, NULL_FLAG_ID);
-            setFlagLocation(rc, rc.getTeam().opponent(), i, null);
+            setFlagLocation(rc, OPPONENT, i, null);
         }
     }
 
     public static void postTurnQueue(RobotController rc) throws GameActionException{
         for (int i = 0; i < 50; i++) {
-            if (rc.readSharedArray(i) == 0){
-                rc.writeSharedArray(i, rc.getID());
+            if (readSharedArrayBuffer(i) == 0){
+                writeSharedArrayBuffer(i, rc.getID());
                 myID = i + 1;
                 break;
             }
@@ -41,25 +49,16 @@ public class Comms {
     public static int[] getTurnQueue(RobotController rc) throws GameActionException {
         int[] queue = new int[50];
         for (int i = 0; i < 50; i++) {
-            queue[i] = rc.readSharedArray(i);
+            queue[i] = readSharedArrayBuffer(i);
         }
         return queue;
     }
 
     public static void clear(RobotController rc) throws GameActionException {
         for (int i = 0; i < 64; i++) {
-            rc.writeSharedArray(i, 0);
+            writeSharedArrayBuffer(i, 0);
         }
     }
-
-    // can use this to assign robots roles at the start of the game
-    // id ranges from 1 to 50
-    public static int incrementAndGetId(RobotController rc) throws GameActionException {
-        int value = getBits(rc, BOT_ID_INDEX, 6);
-        setBits(rc, BOT_ID_INDEX, value + 1, 6);
-        return value + 1;
-    }
-
     private static int symmetryId(Symmetry sym) {
         switch (sym) {
             case HORIZONTAL:
@@ -107,7 +106,7 @@ public class Comms {
     // add timestamps to flag locations?
     public static MapLocation getFlagLocation(RobotController rc, Team team, int flag) throws GameActionException {
         if (flag < 0 || flag >= 3) throw new RuntimeException();
-        int index = (rc.getTeam() == team ? ALLY_FLAG_LOC_START_INDEX : ENEMY_FLAG_LOC_START_INDEX) + 12 * flag;
+        int index = (ALLY == team ? ALLY_FLAG_LOC_START_INDEX : ENEMY_FLAG_LOC_START_INDEX) + 12 * flag;
         int value = getBits(rc, index, 12);
         int x = value >>> 6;
         int y = value & 0b111111;
@@ -118,7 +117,7 @@ public class Comms {
         if (flag < 0 || flag >= 3) throw new RuntimeException();
         int x = loc == null ? 61 : loc.x;
         int y = loc == null ? 61 : loc.y;
-        int index = (rc.getTeam() == team ? ALLY_FLAG_LOC_START_INDEX : ENEMY_FLAG_LOC_START_INDEX) + 12 * flag;
+        int index = (ALLY == team ? ALLY_FLAG_LOC_START_INDEX : ENEMY_FLAG_LOC_START_INDEX) + 12 * flag;
         int value = (x << 6) + y;
         setBits(rc, index, value, 12);
     }
@@ -137,7 +136,7 @@ public class Comms {
     public static MapLocation[] getAllyFlagLocations(RobotController rc) throws GameActionException {
         ArrayList<MapLocation> locs = new ArrayList<>();
         for (int i = 0; i < 3; i++) {
-            MapLocation loc = getFlagLocation(rc, rc.getTeam(), i);
+            MapLocation loc = getFlagLocation(rc, ALLY, i);
             if (loc != null) locs.add(loc);
         }
         return locs.toArray(new MapLocation[0]);
@@ -146,7 +145,7 @@ public class Comms {
     public static MapLocation[] getEnemyFlagLocations(RobotController rc) throws GameActionException {
         ArrayList<MapLocation> locs = new ArrayList<>();
         for (int i = 0; i < 3; i++) {
-            MapLocation loc = getFlagLocation(rc, rc.getTeam().opponent(), i);
+            MapLocation loc = getFlagLocation(rc, OPPONENT, i);
             if (loc != null) locs.add(loc);
         }
         return locs.toArray(new MapLocation[0]);
@@ -157,14 +156,14 @@ public class Comms {
             int id = getEnemyFlagId(rc, i);
             if (id == NULL_FLAG_ID || id == flagId) {
                 setEnemyFlagId(rc, i, flagId);
-                setFlagLocation(rc, rc.getTeam().opponent(), i, flagLoc);
+                setFlagLocation(rc, OPPONENT, i, flagLoc);
                 break;
             }
         }
     }
 
     public static void reportNearbyEnemyFlags(RobotController rc) throws GameActionException {
-        FlagInfo[] flags = rc.senseNearbyFlags(-1, rc.getTeam().opponent());
+        FlagInfo[] flags = rc.senseNearbyFlags(-1, OPPONENT);
         for (FlagInfo flag : flags) {
             reportEnemyFlag(rc, flag.getID(), flag.getLocation());
         }
@@ -181,12 +180,12 @@ public class Comms {
 
     // returns an even number between 0 and 30 inclusive
     public static int getZoneRobots(RobotController rc, int id, Team team) throws GameActionException {
-        int index = ZONE_START_INDEX + id * 9 + (rc.getTeam() == team ? 0 : 4);
+        int index = ZONE_START_INDEX + id * 9 + (ALLY == team ? 0 : 4);
         return 2 * getBits(rc, index, 4);
     }
 
     public static void setZoneRobots(RobotController rc, MapLocation loc, Team team, int numRobots) throws GameActionException {
-        int index = zoneBitIndex(loc) + (rc.getTeam() == team ? 0 : 4);
+        int index = zoneBitIndex(loc) + (ALLY == team ? 0 : 4);
         setBits(rc, index, Math.min(numRobots / 2, 30), 4);
     }
 
@@ -206,12 +205,12 @@ public class Comms {
         // we avoid using setBits for efficiency
         // this also assumes zone info is the last thing we store in the array
         int arrayIndex = ZONE_START_INDEX / 16;
-        int value = rc.readSharedArray(arrayIndex);
+        int value = readSharedArrayBuffer(arrayIndex);
         int shift = 16 - (ZONE_START_INDEX % 16);
         int mask = (1 << shift) - 1;
-        rc.writeSharedArray(arrayIndex, value & ~mask);
+        writeSharedArrayBuffer(arrayIndex, value & ~mask);
         for (int i = arrayIndex + 1; i < GameConstants.SHARED_ARRAY_LENGTH; i++) {
-            rc.writeSharedArray(i, 0);
+            writeSharedArrayBuffer(i, 0);
         }
     }
 
@@ -222,31 +221,31 @@ public class Comms {
         int numAllies = 0;
         int numEnemies = 0;
         for (RobotInfo robot : robots) {
-            if (robot.team == rc.getTeam()) numAllies++;
+            if (robot.team == ALLY) numAllies++;
             else numEnemies++;
         }
-        setZoneRobots(rc, loc, rc.getTeam(), numAllies);
-        setZoneRobots(rc, loc, rc.getTeam().opponent(), numEnemies);
+        setZoneRobots(rc, loc, ALLY, numAllies);
+        setZoneRobots(rc, loc, OPPONENT, numEnemies);
     }
 
 
 
     private static int getBits32(RobotController rc, int arrayIndex) throws GameActionException {
-        int a = rc.readSharedArray(arrayIndex);
-        int b = rc.readSharedArray(arrayIndex + 1);
+        int a = readSharedArrayBuffer(arrayIndex);
+        int b = readSharedArrayBuffer(arrayIndex + 1);
         return (a << 16) + b;
     }
 
     private static void setBits32(RobotController rc, int arrayIndex, int value) throws GameActionException {
-        rc.writeSharedArray(arrayIndex, value >>> 16);
-        rc.writeSharedArray(arrayIndex + 1, value & ((1 << 16) - 1));
+        writeSharedArrayBuffer(arrayIndex, value >>> 16);
+        writeSharedArrayBuffer(arrayIndex + 1, value & ((1 << 16) - 1));
     }
 
     private static int getBits(RobotController rc, int bitIndex, int numBits) throws GameActionException {
         if (numBits > 16) throw new RuntimeException();
         int arrayIndex = bitIndex / 16;
         if (arrayIndex == 63) {
-            int bits = rc.readSharedArray(arrayIndex);
+            int bits = readSharedArrayBuffer(arrayIndex);
             int shift = 16 - numBits - (bitIndex % 16);
             return (bits >>> shift) & ((1 << numBits) - 1);
         } else {
@@ -261,17 +260,29 @@ public class Comms {
         value &= ((1 << numBits) - 1);
         int arrayIndex = bitIndex / 16;
         if (arrayIndex == 63) {
-            int bits = rc.readSharedArray(arrayIndex);
+            int bits = readSharedArrayBuffer(arrayIndex);
             int shift = 16 - numBits - (bitIndex % 16);
             int mask = ((1 << numBits) - 1) << shift;
             int newBits = (bits & ~mask) | (value << shift);
-            rc.writeSharedArray(arrayIndex, newBits);
+            writeSharedArrayBuffer(arrayIndex, newBits);
         } else {
             int bits = getBits32(rc, arrayIndex);
             int shift = 32 - numBits - (bitIndex % 16);
             int mask = ((1 << numBits) - 1) << shift;
             int newBits = (bits & ~mask) | (value << shift);
             setBits32(rc, arrayIndex, newBits);
+        }
+    }
+    public static void loadComms(RobotController rc) throws GameActionException {
+        for (int i = 0; i < 64; i ++ ) {
+            BUFFER[i] = rc.readSharedArray(i);
+            BUFFER_GIT[i] = rc.readSharedArray(i);
+        }
+
+    }
+    public static void postComms(RobotController rc) throws GameActionException {
+        for (int i = 0; i < 64; i ++ ) {
+            if (BUFFER_GIT[i] != BUFFER[i]) rc.writeSharedArray(i, BUFFER[i]);
         }
     }
 }

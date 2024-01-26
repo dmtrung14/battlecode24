@@ -6,6 +6,8 @@ import defaultplayer.Comms;
 import defaultplayer.Constants;
 import defaultplayer.Pathfind;
 
+import java.util.ArrayList;
+
 import static defaultplayer.Constants.*;
 import static defaultplayer.util.CheckWrapper.*;
 import static defaultplayer.util.Optimizer.*;
@@ -14,7 +16,9 @@ public class Micro {
     public static int action(RobotController rc) {
         int bestZone = -1;
         double bestScore = Double.NEGATIVE_INFINITY;
-        for (ZoneInfo zone : ZONE_INFO) {
+        for (int i = 0; i < 100; i ++ ) {
+            if (!isCriticalZone(i)) continue;
+            ZoneInfo zone = ZONE_INFO[i];
             double score = zone.getScore();
             if (score > bestScore) {
                 bestScore = score;
@@ -28,14 +32,14 @@ public class Micro {
         /* Return level of attack from 0 (retreat) to 3 (all out attack)*/
         /* attack based on distance to flag */
         int attackLv = 0;
-        if (rc.senseNearbyFlags(4, rc.getTeam().opponent()).length > 0) attackLv = 3;
-        else if (rc.senseNearbyFlags(9, rc.getTeam().opponent()).length > 0) attackLv = 2;
-        else if (rc.senseNearbyFlags(16, rc.getTeam().opponent()).length > 0) attackLv = 1;
+        if (rc.senseNearbyFlags(4, OPPONENT).length > 0) attackLv = 3;
+        else if (rc.senseNearbyFlags(9, OPPONENT).length > 0) attackLv = 2;
+        else if (rc.senseNearbyFlags(16, OPPONENT).length > 0) attackLv = 1;
 
         /* attack lv based on enemy dynamics */
         // TODO : get nearby enemies and allies with zoning rather than just senseNearbyRobots
-        RobotInfo[] nearbyEnemies = rc.senseNearbyRobots(12, rc.getTeam().opponent());
-        RobotInfo[] nearbyAllies = rc.senseNearbyRobots(12, rc.getTeam());
+        RobotInfo[] nearbyEnemies = rc.senseNearbyRobots(12, OPPONENT);
+        RobotInfo[] nearbyAllies = rc.senseNearbyRobots(12, ALLY);
         double allyScore = 0;
         double enemyScore = 0;
         for (RobotInfo ally : nearbyAllies) allyScore += (1 + ally.getHealth() * 0.002);
@@ -63,7 +67,7 @@ public class Micro {
     }
 
     public static void attackLv3(RobotController rc) throws GameActionException {
-        RobotInfo weakestEnemy = nearestEnemy(rc);
+        RobotInfo weakestEnemy = weakestEnemy(rc);
         if (weakestEnemy == null) return;
         MapLocation weakestEnemyLoc = weakestEnemy.getLocation();
         MapLocation current = rc.getLocation();
@@ -103,7 +107,7 @@ public class Micro {
     }
 
     public static void attackLv1(RobotController rc) throws GameActionException {
-        RobotInfo weakestEnemy = nearestEnemy(rc);
+        RobotInfo weakestEnemy = weakestEnemy(rc);
         if (weakestEnemy == null) return;
         MapLocation weakestEnemyLoc = weakestEnemy.getLocation();
         MapLocation current = rc.getLocation();
@@ -196,7 +200,7 @@ public class Micro {
 
     public static void tryReturnFlag(RobotController rc) throws GameActionException {
         MapLocation spawnZone = nearestSpawnZone(rc);
-        int flagId = rc.senseNearbyFlags(0, rc.getTeam().opponent())[0].getID();
+        int flagId = rc.senseNearbyFlags(0, OPPONENT)[0].getID();
         Pathfind.moveToward(rc, spawnZone, false, true);
         if (!rc.hasFlag()) {
             Comms.reportEnemyFlagCaptured(rc, flagId);
@@ -207,7 +211,7 @@ public class Micro {
         Direction dir = Pathfind.bellmanFord(rc, spawnZone, false, true);
         if (dir == null) return;
         MapLocation loc = rc.adjacentLocation(dir);
-        RobotInfo[] allies = rc.senseNearbyRobots(loc, 2, rc.getTeam());
+        RobotInfo[] allies = rc.senseNearbyRobots(loc, 2, ALLY);
         for (RobotInfo ally : allies) {
             if (ally.ID != rc.getID() && ally.health >= 500 && rc.canDropFlag(loc)) {
                 rc.dropFlag(loc);
@@ -229,12 +233,31 @@ public class Micro {
         ENEMY_FLAGS_PING = rc.senseBroadcastFlagLocations();
         ENEMY_FLAGS_COMMS = Comms.getEnemyFlagLocations(rc);
         ALLY_FLAGS = Comms.getAllyFlagLocations(rc);
+        NEIGHBORING_ZONES = ZoneInfo.getNeighbors(ZoneInfo.getZoneId(rc.getLocation()));
+        updateFlagZones(rc);
         updateZoneInfo(rc);
     }
 
+    public static void updateFlagZones(RobotController rc) throws GameActionException {
+        FLAG_ZONES = new Integer[ENEMY_FLAGS_PING.length + ENEMY_FLAGS_COMMS.length + ALLY_FLAGS.length];
+        int index = 0;
+        for (MapLocation loc : ENEMY_FLAGS_PING) {
+            FLAG_ZONES[index] = ZoneInfo.getZoneId(loc);
+            index += 1;
+        }
+        for (MapLocation loc : ENEMY_FLAGS_COMMS) {
+            FLAG_ZONES[index] = ZoneInfo.getZoneId(loc);
+            index += 1;
+        }
+        for (MapLocation loc : ALLY_FLAGS) {
+            FLAG_ZONES[index] = ZoneInfo.getZoneId(loc);
+            index += 1;
+        }
+    }
     public static void updateZoneInfo(RobotController rc) throws GameActionException {
         if (!rc.isSpawned()) return;
         for (int i = 0; i < 100; i ++ ) {
+            if (!isCriticalZone(i)) continue;
             ZONE_INFO[i].setZoneInfo(
                     Comms.getZoneRobots(rc, i, ALLY),
                     Comms.getZoneRobots(rc, i, OPPONENT),
@@ -250,7 +273,7 @@ public class Micro {
         }
         for (MapLocation loc : ENEMY_FLAGS_COMMS) {
             int id = ZoneInfo.getZoneId(loc);
-            ZONE_INFO[id].addFlag(OPPONENT);
+            if (id < 100) ZONE_INFO[id].addFlag(OPPONENT);
         }
         for (MapLocation loc : ALLY_FLAGS) {
             int id = ZoneInfo.getZoneId(loc);

@@ -48,4 +48,10 @@ public class Constants {
     public static ArrayList<MapLocation> ENEMY_BORDER_LINE = new ArrayList<MapLocation>();
     public static ArrayList<MapLocation> NEUTRAL_BORDERLINE = new ArrayList<MapLocation>();
 
+    public static int[] BUFFER = new int[64];
+    public static int[] BUFFER_GIT = new int[64];
+
+    public static Integer[] FLAG_ZONES;
+
+    public static Integer[] NEIGHBORING_ZONES;
 }

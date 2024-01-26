@@ -38,31 +38,52 @@ public class Pathfind {
         moveRandomly(rc);
     }
 
+//    public static void exploreDVD(RobotController rc) throws GameActionException {
+//        if (!rc.isSpawned()) return; // <-- I don't quite need it but to make sure
+//        MapLocation current = rc.getLocation();
+//        EXPLORED.add(current);
+//        bfsInSight(rc, current);
+//        if (DVDDir == null) DVDDir = current.directionTo(center());
+//        MapLocation newLoc = current.add(DVDDir);
+//        if (rc.canMove(DVDDir) && !EXPLORED.contains(newLoc)) {
+//            rc.move(DVDDir);
+//        } else if ((newLoc.x + newLoc.y) % 2 == 0 && rc.canFill(newLoc)){
+//            rc.fill(newLoc);
+//            if (rc.canMove(DVDDir)) rc.move(DVDDir);
+//        }else {
+//            Direction newDir = DVDDir;
+//            Direction moveDir = null;
+//            for (int i = 0; i < 8; i ++ ){
+//                newDir = (myID + rc.getRoundNum()) % 2 == 0 ? newDir.rotateLeft() : newDir.rotateRight();
+//                newLoc = current.add(newDir);
+//                if (rc.canMove(newDir)) {
+//                    if (!EXPLORED.contains(newLoc)) {
+//                        rc.move(newDir);
+//                        DVDDir = newDir;
+//                        return;
+//                    } else if (moveDir == null) {
+//                        moveDir = newDir;
+//                    }
+//                }
+//                else if ((newLoc.x + newLoc.y) % 2 == 0 && rc.canFill(newLoc)){
+//                    rc.fill(newLoc);
+//                    if (rc.canMove(newDir)) rc.move(newDir);
+//                }
+//            }
+//            rc.move(moveDir);
+//        }
+//    }
     public static void exploreDVD(RobotController rc) throws GameActionException {
-        if (!rc.isSpawned()) return; // <-- I don't quite need it but to make sure
+        if (!rc.isSpawned()) return;
         MapLocation current = rc.getLocation();
-        EXPLORED.add(current);
+        Direction dir = DIRECTIONS[RANDOM.nextInt(8)];
         bfsInSight(rc, current);
-        if (DVDDir == null) DVDDir = current.directionTo(center());
-        MapLocation newLoc = current.add(DVDDir);
-        if (rc.canMove(DVDDir) && !EXPLORED.contains(newLoc)) {
-            rc.move(DVDDir);
-        } else if ((newLoc.x + newLoc.y) % 2 == 0 && rc.canFill(newLoc)){
-            rc.fill(newLoc);
-            if (rc.canMove(DVDDir)) rc.move(DVDDir);
-        }else {
-            Direction newDir = DVDDir;
-            for (int i = 0; i < 8; i ++ ){
-                newDir = (myID + rc.getRoundNum()) % 2 == 0 ? newDir.rotateLeft() : newDir.rotateRight();
-                newLoc = current.add(newDir);
-                if (rc.canMove(newDir)) {
-                    rc.move(newDir);
-                    DVDDir = newDir;
-                    break;
-                } else if ((newLoc.x + newLoc.y) % 2 == 0 && rc.canFill(newLoc)){
-                    rc.fill(newLoc);
-                    if (rc.canMove(newDir)) rc.move(newDir);
-                }
+        if (rc.canMove(dir)) rc.move(dir);
+        else {
+            Direction tempDir = dir;
+            for (int i = 0; i < 8; i ++) {
+                tempDir = tempDir.rotateLeft();
+                if (rc.canMove(tempDir)) rc.move(tempDir);
             }
         }
     }
@@ -73,7 +94,7 @@ public class Pathfind {
         int distance = 0;
         int neutral = Integer.MAX_VALUE;
         queue.add(center);
-        while (!queue.isEmpty() && distance <= 3) {
+        while (!queue.isEmpty() && distance <= 4) {
             int size = queue.size();
             for (int i = 0; i < size; i++) {
                 MapLocation loc = queue.remove();
@@ -83,13 +104,14 @@ public class Pathfind {
                     MapLocation newLoc = loc.add(dir);
                     if (!rc.canSenseLocation(newLoc) || visited.contains(newLoc)) continue;
                     MapInfo newLocInfo = rc.senseMapInfo(newLoc);
-                    if (newLocInfo.getTeamTerritory() == rc.getTeam().opponent() && !newLocInfo.isWall()) {
+                    Team territory = newLocInfo.getTeamTerritory();
+                    if (territory == OPPONENT && !newLocInfo.isWall()) {
                         ENEMY_BORDER_LINE.add(newLoc);
                         return;
                     }
-                    else if (!newLocInfo.isWall() && !newLocInfo.isDam() && newLocInfo.getTeamTerritory() == Team.NEUTRAL)
+                    else if (!newLocInfo.isWall() && !newLocInfo.isDam() && territory == Team.NEUTRAL)
                         NEUTRAL_BORDERLINE.add(newLoc);
-                    if (Clock.getBytecodesLeft() < 500) return;
+                    if (Clock.getBytecodesLeft() < 1200) return;
                     else queue.add(newLoc);
                 }
             }
@@ -116,7 +138,7 @@ public class Pathfind {
     }
 
     private static void moveAwayFromAllies(RobotController rc) throws GameActionException {
-        moveAwayFromTeam(rc, rc.getTeam());
+        moveAwayFromTeam(rc, ALLY);
     }
 
     public static void moveAwayFromTeam(RobotController rc, Team team) throws GameActionException {
@@ -157,7 +179,7 @@ public class Pathfind {
         rc.setIndicatorDot(target, 255, 0, 0);
         Direction bestDir = bellmanFord(rc, target, fill, safe);
         if (bestDir != null) {
-            FlagInfo[] flags = rc.senseNearbyFlags(-1, rc.getTeam().opponent());
+            FlagInfo[] flags = rc.senseNearbyFlags(-1, OPPONENT);
             int leftDist = rc.adjacentLocation(bestDir.rotateLeft().rotateLeft()).distanceSquaredTo(target);
             int rightDist = rc.adjacentLocation(bestDir.rotateRight().rotateRight()).distanceSquaredTo(target);
             Direction perpDir = leftDist < rightDist ? bestDir.rotateLeft().rotateLeft() : bestDir.rotateRight().rotateRight();

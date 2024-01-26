@@ -62,15 +62,20 @@ public class Setup {
     }
 
     public void initializeTurnQueue() throws GameActionException {
+        Comms.loadComms(rc);
         Comms.postTurnQueue(rc);
+        Comms.postComms(rc);
         Clock.yield();
+        Comms.loadComms(rc);
+        Comms.postComms(rc);
         TURN_QUEUE = Comms.getTurnQueue(rc);
         if (rc.getID() == TURN_QUEUE[49]) Comms.clear(rc);
         Clock.yield();
     }
 
     public void moveFlag() throws GameActionException {
-        MapLocation flag = rc.senseNearbyFlags(2, rc.getTeam())[0].getLocation();
+        rc.setIndicatorString("moving flags");
+        MapLocation flag = rc.senseNearbyFlags(2, ALLY)[0].getLocation();
         if (rc.canPickupFlag(flag)) {
             rc.pickupFlag(flag);
         }
@@ -94,13 +99,13 @@ public class Setup {
                 }
                 // check if current flag location is at least 6 from both the other 2 flags
                 for (int j = 0; j < 3; j++) {
-                    if (j + 1 != Constants.myID && loc.distanceSquaredTo(Comms.getFlagLocation(rc, rc.getTeam(), j)) < 36) {
+                    if (j + 1 != Constants.myID && loc.distanceSquaredTo(Comms.getFlagLocation(rc, ALLY, j)) < 36) {
                         continue dirLoop;
                     }
                 }
                 if (rc.canMove(d)) {
                     rc.move(d);
-                    Comms.setFlagLocation(rc, rc.getTeam(), myID - 1, rc.getLocation());
+                    Comms.setFlagLocation(rc, ALLY, myID - 1, rc.getLocation());
                     ALLY_FLAGS[myID - 1] = rc.getLocation();
                 }
             }
@@ -173,16 +178,17 @@ public class Setup {
         }
         if (isBuilder()) {
             if (rc.getRoundNum() <= FLAG_RUSH_ROUNDS) moveFlag();
+            rc.setIndicatorString("done moving flag");
             if (!afterBuildTrap) buildAroundFlags();
-//            digLand();
             Pathfind.moveToward(rc, ALLY_FLAGS[myID - 1], false);
         }
         else if (isExplorer()) {
             if (rc.getRoundNum() <= 30) Pathfind.explore(rc);
-            else if(rc.getRoundNum() <= EXPLORE_ROUNDS) Pathfind.exploreDVD(rc);
+            else if(rc.getRoundNum() <= EXPLORE_ROUNDS) {
+                Pathfind.exploreDVD(rc);
+            }
             else if (!isNearDam(rc)) {
                 MapLocation center = new MapLocation(mapWidth / 2, mapHeight / 2);
-//                Pathfind.moveToward(rc, !BORDERLINE.isEmpty() ? BORDERLINE.get(myID * 100 % BORDERLINE.size()) : center, true);
                 Pathfind.moveToward(rc, !ENEMY_BORDER_LINE.isEmpty() ?
                         ENEMY_BORDER_LINE.get(myID % ENEMY_BORDER_LINE.size()) :
                         (!NEUTRAL_BORDERLINE.isEmpty() ? NEUTRAL_BORDERLINE.get(myID % NEUTRAL_BORDERLINE.size()) : center), true);

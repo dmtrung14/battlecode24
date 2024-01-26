@@ -4,6 +4,8 @@ import battlecode.common.*;
 
 import java.util.Random;
 
+import static defaultplayer.Constants.*;
+
 // the guard unit sits on a flag and reports enemy attacks
 public class Guard {
     static final Direction[] directions = {
@@ -50,7 +52,7 @@ public class Guard {
 
     private void moveTowardFlag() throws GameActionException {
         // TODO: pathfind towards assigned flag
-        MapLocation flag = Comms.getFlagLocation(rc, rc.getTeam(), assignedFlag);
+        MapLocation flag = Comms.getFlagLocation(rc, ALLY, assignedFlag);
         Direction dir = rc.getLocation().directionTo(flag);
         if (rc.canMove(dir)) {
             rc.move(dir);
@@ -73,10 +75,10 @@ public class Guard {
         }
         if (rc.getRoundNum() < GameConstants.SETUP_ROUNDS) {
             setupPhaseOneTurn();
-        } else if (!rc.getLocation().equals(Comms.getFlagLocation(rc, rc.getTeam(), assignedFlag))) {
+        } else if (!rc.getLocation().equals(Comms.getFlagLocation(rc, ALLY, assignedFlag))) {
             moveTowardFlag();
         } else {
-            RobotInfo[] enemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
+            RobotInfo[] enemies = rc.senseNearbyRobots(-1, OPPONENT);
             if (enemies.length > 0) {
                 reportAndAttackEnemies(enemies);
             }

@@ -2,23 +2,27 @@ package defaultplayer;
 
 import battlecode.common.*;
 
-import static defaultplayer.Constants.myID;
+import java.util.Arrays;
+
+import static defaultplayer.Constants.*;
 
 public strictfp class RobotPlayer {
     public static void run(RobotController rc) throws GameActionException {
         Setup setup = new Setup(rc);
         MainPhase main = new MainPhase(rc);
+
         setup.initializeTurnQueue();
         setup.initializeStatic();
-//        rc.setIndicatorString(String.valueOf(Constants.myID));
 
         while (true) {
             try {
+                Comms.loadComms(rc);
                 if (rc.getRoundNum() <= GameConstants.SETUP_ROUNDS) {
                     setup.run();
                 } else {
                     main.run();
                 }
+                Comms.postComms(rc);
             } catch (Exception e) {
                 String message = "Exception";
                 MapLocation loc = rc.getLocation();

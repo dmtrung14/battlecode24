@@ -57,7 +57,7 @@ public class CheckWrapper {
     public static boolean isFlagInDanger(RobotController rc) throws GameActionException {
         boolean isDanger = false;
         MapLocation myFlag = ALLY_FLAGS[myID - 1];
-        for (RobotInfo robot : rc.senseNearbyRobots(-1, rc.getTeam().opponent())) {
+        for (RobotInfo robot : rc.senseNearbyRobots(-1, OPPONENT)) {
             if (myFlag.distanceSquaredTo(robot.getLocation()) < 20) {
                 isDanger = true;
                 break;
@@ -70,7 +70,7 @@ public class CheckWrapper {
     }
 
     public static boolean nearbyEnemyHasFlag(RobotController rc) throws GameActionException {
-        RobotInfo[] nearbyEnemies = rc.senseNearbyRobots(10, rc.getTeam().opponent());
+        RobotInfo[] nearbyEnemies = rc.senseNearbyRobots(10, OPPONENT);
         for (RobotInfo robot : nearbyEnemies) {
             if (robot.hasFlag()) return true;
         }
@@ -80,8 +80,12 @@ public class CheckWrapper {
 
     public static boolean isNearEnemyTerritory(RobotController rc) throws GameActionException {
         for (MapInfo mapInfo : rc.senseNearbyMapInfos(16))
-            if (mapInfo.getTeamTerritory() == rc.getTeam().opponent()) return true;
+            if (mapInfo.getTeamTerritory() == OPPONENT) return true;
         return false;
+    }
+
+    public static boolean isCriticalZone(int id) {
+        return (contains(FLAG_ZONES, id) || contains(NEIGHBORING_ZONES, id));
     }
 
 

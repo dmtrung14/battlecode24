@@ -35,7 +35,7 @@ public class Optimizer {
 
     public static MapLocation nearbyFlagHolder(RobotController rc, FlagInfo[] flags, MapLocation loc) {
         for (FlagInfo flag : flags) {
-            if (flag.isPickedUp() && flag.getTeam() == rc.getTeam().opponent() && flag.getLocation().isAdjacentTo(loc)) {
+            if (flag.isPickedUp() && flag.getTeam() == OPPONENT && flag.getLocation().isAdjacentTo(loc)) {
                 return flag.getLocation();
             }
         }
@@ -56,12 +56,12 @@ public class Optimizer {
         return nearest;
     }
 
-    public static RobotInfo nearestEnemy(RobotController rc) throws GameActionException {
+    public static RobotInfo nearestEnemy(RobotController rc, RobotInfo[] enemies) throws GameActionException {
         if (!rc.isSpawned()) return null;
         int minDistance = Integer.MAX_VALUE;
         RobotInfo nearest = null;
         MapLocation current = rc.getLocation();
-        for (RobotInfo robot : rc.senseNearbyRobots(-1, rc.getTeam().opponent())) {
+        for (RobotInfo robot : enemies) {
             if (current.distanceSquaredTo(robot.getLocation()) < minDistance) {
                 nearest = robot;
                 minDistance = current.distanceSquaredTo(robot.getLocation());
@@ -74,7 +74,7 @@ public class Optimizer {
         if (!rc.isSpawned()) return null;
         int minHealth = Integer.MAX_VALUE;
         RobotInfo weakest = null;
-        for (RobotInfo robot : rc.senseNearbyRobots(4, rc.getTeam())) {
+        for (RobotInfo robot : rc.senseNearbyRobots(4, ALLY)) {
             if (robot.getHealth() < minHealth) {
                 weakest = robot;
                 minHealth = robot.getHealth();
@@ -87,9 +87,9 @@ public class Optimizer {
         if (!rc.isSpawned()) return null;
         int minHealth = Integer.MAX_VALUE;
         RobotInfo weakest = null;
-        for (RobotInfo robot : rc.senseNearbyRobots(4, rc.getTeam())) {
+        for (RobotInfo robot : rc.senseNearbyRobots(4, ALLY)) {
             int health = robot.getHealth();
-            int numEnemies = rc.senseNearbyRobots(robot.getLocation(), 4, rc.getTeam().opponent()).length;
+            int numEnemies = rc.senseNearbyRobots(robot.getLocation(), 4, OPPONENT).length;
             if (health + 80 - numEnemies * 150 > 0) {
                 weakest = robot;
                 minHealth = health;
@@ -102,7 +102,7 @@ public class Optimizer {
         if (!rc.isSpawned()) return null;
         int minHealth = Integer.MAX_VALUE;
         RobotInfo weakest = null;
-        for (RobotInfo robot : rc.senseNearbyRobots(4, rc.getTeam().opponent())) {
+        for (RobotInfo robot : rc.senseNearbyRobots(4, OPPONENT)) {
             if (robot.getHealth() < minHealth) {
                 weakest = robot;
                 minHealth = robot.getHealth();
