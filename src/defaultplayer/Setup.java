@@ -99,7 +99,8 @@ public class Setup {
                 }
                 // check if current flag location is at least 6 from both the other 2 flags
                 for (int j = 0; j < 3; j++) {
-                    if (j + 1 != Constants.myID && loc.distanceSquaredTo(Comms.getFlagLocation(rc, ALLY, j)) < 36) {
+                    MapLocation fl = Comms.getFlagLocation(rc, ALLY, j);
+                    if (fl == null || j + 1 != Constants.myID && loc.distanceSquaredTo(fl) < 36) {
                         continue dirLoop;
                     }
                 }
@@ -139,7 +140,7 @@ public class Setup {
         if (!rc.isSpawned()) return;
         MapLocation center = new MapLocation(mapWidth / 2, mapHeight / 2);
         Direction dirToCenter = ALLY_FLAGS[myID - 1].directionTo(center);
-        Direction[] dirSet = { dirToCenter, dirToCenter.rotateRight(), dirToCenter.rotateLeft() };
+        Direction[] dirSet = {dirToCenter, dirToCenter.rotateRight(), dirToCenter.rotateLeft()};
         Direction[] dirs = Direction.allDirections();
         Direction dir = dirSet[rand.nextInt(3)];
         MapLocation myFlag = ALLY_FLAGS[myID - 1];
@@ -181,17 +182,15 @@ public class Setup {
             rc.setIndicatorString("done moving flag");
             if (!afterBuildTrap) buildAroundFlags();
             Pathfind.moveToward(rc, ALLY_FLAGS[myID - 1], false);
-        }
-        else if (isExplorer()) {
+        } else if (isExplorer()) {
             FlagInfo[] nearbyEnemyFlags = rc.senseNearbyFlags(-1, OPPONENT);
             MapInfo[] mapInfos = rc.senseNearbyMapInfos();
             RobotInfo[] allies = rc.senseNearbyRobots(-1, ALLY);
             RobotInfo[] enemies = rc.senseNearbyRobots(-1, OPPONENT);
             if (rc.getRoundNum() <= 30) Pathfind.explore(rc, allies);
-            else if(rc.getRoundNum() <= EXPLORE_ROUNDS) {
+            else if (rc.getRoundNum() <= EXPLORE_ROUNDS) {
                 Pathfind.exploreDVD(rc);
-            }
-            else if (!isNearDam(rc)) {
+            } else if (!isNearDam(rc)) {
                 MapLocation center = new MapLocation(mapWidth / 2, mapHeight / 2);
                 Pathfind.moveToward(rc, !ENEMY_BORDER_LINE.isEmpty() ?
                         ENEMY_BORDER_LINE.get(myID % ENEMY_BORDER_LINE.size()) :

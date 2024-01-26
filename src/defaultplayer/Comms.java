@@ -178,9 +178,14 @@ public class Comms {
         return ZONE_START_INDEX + zoneId * 9;
     }
 
+
     // returns an even number between 0 and 30 inclusive
-    public static int getZoneRobots(RobotController rc, int id, Team team) throws GameActionException {
-        int index = ZONE_START_INDEX + id * 9 + (ALLY == team ? 0 : 4);
+    public static int getZoneRobotsAlly(RobotController rc, int id) throws GameActionException {
+        int index = ZONE_START_INDEX + id * 9;
+        return 2 * getBits(rc, index, 4);
+    }
+    public static int getZoneRobotsOpponent(RobotController rc, int id) throws GameActionException {
+        int index = ZONE_START_INDEX + id * 9 + 4;
         return 2 * getBits(rc, index, 4);
     }
 
@@ -193,9 +198,9 @@ public class Comms {
         return getBits(rc, zoneBitIndex(loc) + 8, 1) != 0;
     }
 
-    public static boolean zoneHasTraps(RobotController rc, int id) throws GameActionException {
-        return getBits(rc, ZONE_START_INDEX + 9 * id + 8, 1) != 0;
-    }
+//    public static boolean zoneHasTraps(RobotController rc, int id) throws GameActionException {
+//        return getBits(rc, ZONE_START_INDEX + 9 * id + 8, 1) != 0;
+//    }
 
     public static void setZoneTraps(RobotController rc, MapLocation loc, boolean hasTraps) throws GameActionException {
         setBits(rc, zoneBitIndex(loc) + 8, hasTraps ? 1 : 0, 1);
@@ -242,16 +247,16 @@ public class Comms {
     }
 
     private static int getBits(RobotController rc, int bitIndex, int numBits) throws GameActionException {
-        if (numBits > 16) throw new RuntimeException();
+//        if (numBits > 16) throw new RuntimeException();
         int arrayIndex = bitIndex / 16;
         if (arrayIndex == 63) {
             int bits = readSharedArrayBuffer(arrayIndex);
             int shift = 16 - numBits - (bitIndex % 16);
-            return (bits >>> shift) & ((1 << numBits) - 1);
+            return ((bits << (shift - numBits)) >>> shift);
         } else {
             int bits = getBits32(rc, arrayIndex);
             int shift = 32 - numBits - (bitIndex % 16);
-            return (bits >>> shift) & ((1 << numBits) - 1);
+            return ((bits << (shift - numBits)) >>> shift);
         }
     }
 

@@ -11,12 +11,13 @@ import java.util.ArrayList;
 import static defaultplayer.Constants.*;
 import static defaultplayer.util.CheckWrapper.*;
 import static defaultplayer.util.Optimizer.*;
+import static defaultplayer.util.ZoneInfo.getZoneId;
 
 public class Micro {
     public static int action(RobotController rc) {
         int bestZone = -1;
         double bestScore = Double.NEGATIVE_INFINITY;
-        for (int i = 0; i < 100; i ++ ) {
+        for (int i = 0; i < 100; i++) {
             if (!isCriticalZone(i)) continue;
             ZoneInfo zone = ZONE_INFO[i];
             double score = zone.getScore();
@@ -82,8 +83,7 @@ public class Micro {
             Pathfind.moveToward(rc, weakestEnemyLoc, false);
             if (rc.canAttack(weakestEnemyLoc)) rc.attack(weakestEnemyLoc);
             tryHeal(rc);
-        }
-        else if (current.distanceSquaredTo(weakestEnemyLoc) <= 10) {
+        } else if (current.distanceSquaredTo(weakestEnemyLoc) <= 10) {
             Pathfind.moveToward(rc, weakestEnemyLoc, false);
         } else {
             tryHeal(rc);
@@ -117,8 +117,7 @@ public class Micro {
                 rc.attack(weakestEnemyLoc);
             }
             retreat(rc);
-        }
-        else if (current.distanceSquaredTo(weakestEnemyLoc) <= 10) {
+        } else if (current.distanceSquaredTo(weakestEnemyLoc) <= 10) {
             retreat(rc);
         } else {
             tryHeal(rc);
@@ -129,10 +128,18 @@ public class Micro {
         if (!rc.isSpawned()) return;
         int attackLv = toAttack(rc);
         switch (attackLv) {
-            case 0: retreat(rc); break; //PLACEHOLDER
-            case 1: attackLv1(rc); break;
-            case 2: attackLv2(rc); break;
-            case 3: attackLv3(rc); break;
+            case 0:
+                retreat(rc);
+                break; //PLACEHOLDER
+            case 1:
+                attackLv1(rc);
+                break;
+            case 2:
+                attackLv2(rc);
+                break;
+            case 3:
+                attackLv3(rc);
+                break;
         }
     }
 
@@ -233,65 +240,72 @@ public class Micro {
         ENEMY_FLAGS_PING = rc.senseBroadcastFlagLocations();
         ENEMY_FLAGS_COMMS = Comms.getEnemyFlagLocations(rc);
         ALLY_FLAGS = Comms.getAllyFlagLocations(rc);
-        NEIGHBORING_ZONES = ZoneInfo.getNeighbors(ZoneInfo.getZoneId(rc.getLocation()));
+        NEIGHBORING_ZONES = ZoneInfo.getNeighbors(getZoneId(rc.getLocation()));
         updateFlagZones(rc);
         updateZoneInfo(rc);
     }
 
     public static void updateFlagZones(RobotController rc) throws GameActionException {
-        FLAG_ZONES = new Integer[ENEMY_FLAGS_PING.length + ENEMY_FLAGS_COMMS.length + ALLY_FLAGS.length];
+        FLAG_ZONES = new int[ENEMY_FLAGS_PING.length + ENEMY_FLAGS_COMMS.length + ALLY_FLAGS.length];
         int index = 0;
         for (MapLocation loc : ENEMY_FLAGS_PING) {
-            FLAG_ZONES[index] = ZoneInfo.getZoneId(loc);
+            FLAG_ZONES[index] = getZoneId(loc);
             index += 1;
         }
         for (MapLocation loc : ENEMY_FLAGS_COMMS) {
-            FLAG_ZONES[index] = ZoneInfo.getZoneId(loc);
+            FLAG_ZONES[index] = getZoneId(loc);
             index += 1;
         }
         for (MapLocation loc : ALLY_FLAGS) {
-            FLAG_ZONES[index] = ZoneInfo.getZoneId(loc);
+            FLAG_ZONES[index] = getZoneId(loc);
             index += 1;
         }
     }
+
     public static void updateZoneInfo(RobotController rc) throws GameActionException {
         if (!rc.isSpawned()) return;
-        for (int i = 0; i < 100; i ++ ) {
-            if (!isCriticalZone(i)) continue;
+        int zoneOfRobot = getZoneId(rc.getLocation());
+        int zoneOfRobotX = zoneOfRobot / 10;
+        int zoneOfRobotY = zoneOfRobot % 10;
+
+        for (int i = 0; i < 100; i++) {
+//            if (!isCriticalZone(i)) continue;
             ZONE_INFO[i].setZoneInfo(
-                    Comms.getZoneRobots(rc, i, ALLY),
-                    Comms.getZoneRobots(rc, i, OPPONENT),
-                    Comms.zoneHasTraps(rc, i)
+                    Comms.getZoneRobotsAlly(rc, i),
+                    Comms.getZoneRobotsOpponent(rc, i),
+                    false
+//                    Comms.zoneHasTraps(rc, i)
             );
-            ZONE_INFO[i].updateWeight(rc);
-            ZONE_INFO[i].resetFlags(ALLY);
-            ZONE_INFO[i].resetFlags(OPPONENT);
+
+            ZONE_INFO[i].updateWeight(zoneOfRobotX, zoneOfRobotY);
+            ZONE_INFO[i].allyFlags = 0;
+            ZONE_INFO[i].enemyFlags = 0;
         }
         for (MapLocation loc : ENEMY_FLAGS_PING) {
-            int id = ZoneInfo.getZoneId(loc);
-            ZONE_INFO[id].addFlag(OPPONENT);
+            int id = getZoneId(loc);
+            ZONE_INFO[id].enemyFlags++;
         }
         for (MapLocation loc : ENEMY_FLAGS_COMMS) {
-            int id = ZoneInfo.getZoneId(loc);
-            if (id < 100) ZONE_INFO[id].addFlag(OPPONENT);
+            int id = getZoneId(loc);
+            if (id < 100) ZONE_INFO[id].enemyFlags++;
         }
         for (MapLocation loc : ALLY_FLAGS) {
-            int id = ZoneInfo.getZoneId(loc);
-            ZONE_INFO[id].addFlag(ALLY);
+            int id = getZoneId(loc);
+            ZONE_INFO[id].allyFlags++;
         }
     }
 
     public static int toReturnAndGuard(RobotController rc) throws GameActionException {
         if (!rc.isSpawned()) return -1;
-        int currentZone = ZoneInfo.getZoneId(rc.getLocation());
+        int currentZone = getZoneId(rc.getLocation());
         int currentZoneX = currentZone / 10;
         int currentZoneY = currentZone % 10;
         int guard = -1;
 //        double mapDiagonal = (new MapLocation(0,0)).distanceSquaredTo((new MapLocation(Constants.mapWidth -1, Constants.mapHeight - 1)));
         double minBalance = 0;
-        for (int i = 0; i < 3; i ++ ) {
+        for (int i = 0; i < 3; i++) {
             if (Comms.isFlagInDanger(rc, i)) {
-                int flagZone = ZoneInfo.getZoneId(ALLY_FLAGS[i]);
+                int flagZone = getZoneId(ALLY_FLAGS[i]);
                 int flagZoneX = flagZone / 10;
                 int flagZoneY = flagZone % 10;
                 /* decide if we should rush back by checking all zones in between the current position

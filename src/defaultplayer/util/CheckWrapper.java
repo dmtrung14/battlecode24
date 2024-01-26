@@ -11,7 +11,14 @@ import static defaultplayer.Constants.*;
 import static defaultplayer.util.Optimizer.*;
 
 public class CheckWrapper {
-    public static <T> boolean contains(T[] array, T value){
+    public static boolean contains(int[] array, int value) {
+        for (int key : array) {
+            if (value == key) return true;
+        }
+        return false;
+    }
+
+    public static <T> boolean contains(T[] array, T value) {
         for (T key : array) {
             if (value.equals(key)) return true;
         }
@@ -36,6 +43,7 @@ public class CheckWrapper {
     public static boolean isGuard() {
         return 4 <= myID && myID <= 9;
     }
+
     public static boolean isNearDam(RobotController rc) throws GameActionException {
         MapInfo[] nearby = rc.senseNearbyMapInfos(2);
         for (MapInfo mapInfo : nearby) if (mapInfo.isDam()) return true;
@@ -50,7 +58,7 @@ public class CheckWrapper {
 
     public static boolean isNearDam(RobotController rc, MapLocation center, int radius) throws GameActionException {
         MapInfo[] nearby = rc.senseNearbyMapInfos(center, radius);
-        for (MapInfo mapInfo: nearby) if (mapInfo.isDam()) return true;
+        for (MapInfo mapInfo : nearby) if (mapInfo.isDam()) return true;
         return false;
     }
 
@@ -65,6 +73,7 @@ public class CheckWrapper {
         }
         return isBuilder() && isDanger;
     }
+
     public static boolean flagInDanger(RobotController rc) throws GameActionException {
         return Comms.isFlagInDanger(rc, 0) || Comms.isFlagInDanger(rc, 1) || Comms.isFlagInDanger(rc, 2);
     }

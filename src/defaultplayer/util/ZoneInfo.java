@@ -14,8 +14,8 @@ public class ZoneInfo {
     private int allies;
     private int enemies;
     private boolean traps;
-    private int allyFlags;
-    private int enemyFlags;
+    public int allyFlags;
+    public int enemyFlags;
 
     private double weight;
 
@@ -83,13 +83,9 @@ public class ZoneInfo {
 
     public double getWeight() { return this.weight; }
 
-    public void updateWeight(RobotController rc) {
-        if (!rc.isSpawned()) return;
-        int zoneOfRobot = getZoneId(rc.getLocation());
-        int zoneOfRobotX = zoneOfRobot / 10;
-        int zoneOfRobotY = zoneOfRobot % 10;
+    public void updateWeight(int zoneOfRobotX,  int zoneOfRobotY) {
         int dist = Math.abs(zoneOfRobotX - zoneX) + Math.abs(zoneOfRobotY - zoneY);
-        this.weight = (double) (Math.sqrt(allyFlags) + Math.pow(enemyFlags, 2) + 1)/(dist + 1);
+        this.weight = (Math.sqrt(allyFlags) + Math.pow(enemyFlags, 2) + 1)/(dist + 1);
     }
 
     public double getScore() {
@@ -104,12 +100,12 @@ public class ZoneInfo {
     public static int getZoneId(MapLocation location) {
         double zoneWidth = Constants.mapWidth * 0.1;
         double zoneHeight = Constants.mapHeight * 0.1;
-        int zoneX = (int) Math.floor(location.x / zoneWidth);
-        int zoneY = (int) Math.floor(location.y / zoneHeight);
+        int zoneX = (int) (location.x / zoneWidth);
+        int zoneY = (int) (location.y / zoneHeight);
         return zoneX * 10 + zoneY;
     }
 
-    public static Integer[] getNeighbors(int zoneID) {
+    public static int[] getNeighbors(int zoneID) {
         int row = zoneID / 10;
         int col = zoneID % 10;
 
@@ -127,7 +123,10 @@ public class ZoneInfo {
                 }
             }
         }
-        Integer[] result = new Integer[neighbors.size()];
-        return neighbors.toArray(result);
+        int[] result = new int[neighbors.size()];
+        for (int i = 0; i < result.length; i++) {
+            result[i] = neighbors.get(i);
+        }
+        return result;
     }
 }

@@ -1,6 +1,7 @@
 package defaultplayer;
 
 import battlecode.common.*;
+import defaultplayer.util.ZoneInfo;
 
 import static defaultplayer.Constants.*;
 import static defaultplayer.util.CheckWrapper.*;
@@ -31,8 +32,7 @@ public class MainPhase {
             if (isFlagInDanger(rc)) {
                 tryAttack(rc);
             }
-        }
-        else if (isExplorer()) {
+        } else if (isExplorer()) {
             // TODO : Configure the logic for the order of attack, movement when flag is in danger.
             if (rc.hasFlag()) tryReturnFlag(rc);
             else {
@@ -41,14 +41,16 @@ public class MainPhase {
                 MapInfo[] mapInfos = rc.senseNearbyMapInfos();
                 RobotInfo[] allies = rc.senseNearbyRobots(-1, ALLY);
                 RobotInfo[] enemies = rc.senseNearbyRobots(-1, OPPONENT);
+                int actionZone = action(rc);
+                if (actionZone != ZoneInfo.getZoneId(rc.getLocation())) {
+                    Pathfind.moveToward(rc, ZONE_INFO[actionZone].getCenter(), true);
+                }
                 tryCaptureFlag(rc, nearbyEnemyFlags);
                 tryAttack(rc);
                 tryBuildTrap(rc, mapInfos, allies, enemies);
                 moveTowardFlag(rc, builder, nearbyEnemyFlags);
                 if (!rc.isSpawned()) return;
                 tryHeal(rc);
-                int actionZone = action(rc);
-                Pathfind.moveToward(rc, ZONE_INFO[actionZone].getCenter(), true);
                 if (!rc.isSpawned()) return;
                 Pathfind.exploreDVD(rc);
             }

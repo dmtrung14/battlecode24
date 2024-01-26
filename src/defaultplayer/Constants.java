@@ -51,7 +51,7 @@ public class Constants {
     public static int[] BUFFER = new int[64];
     public static int[] BUFFER_GIT = new int[64];
 
-    public static Integer[] FLAG_ZONES;
+    public static int[] FLAG_ZONES;
 
-    public static Integer[] NEIGHBORING_ZONES;
+    public static int[] NEIGHBORING_ZONES;
 }
