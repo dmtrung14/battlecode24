@@ -2,6 +2,8 @@ package defaultplayer.util;
 
 import battlecode.common.MapLocation;
 
+import java.util.Map;
+
 public class FastIterableLocSet {
     public StringBuilder keys;
     public int maxlen;
@@ -45,6 +47,25 @@ public class FastIterableLocSet {
     public int size() {
         return size;
     }
+
+    public MapLocation get(int index) {
+        char[] loc = new char[3];
+        keys.getChars(3*index, 3*(index+1), loc, 0);
+        return new MapLocation((int)(loc[1]), (int)(loc[2]));
+    }
+
+    public void toArray(MapLocation[] array) {
+        if (array.length != size) return;
+        for (int i = 0; i < size; i ++ ) array[i] = get(i);
+    }
+
+    public MapLocation[] toArray() {
+        MapLocation[] array = new MapLocation[size];
+        for (int i = 0; i < size; i++) array[i] = get(i);
+        return array;
+    }
+    public boolean isEmpty() { return size == 0; }
+
 
     public void remove(MapLocation loc) {
         String key = locToStr(loc);

@@ -19,8 +19,6 @@ public class MainPhase {
     }
 
     public void run() throws GameActionException {
-        tryBuyGlobal(rc);
-        tryUpdateInfo(rc);
         if (!rc.isSpawned()) {
             setup.trySpawn();
             if (!rc.isSpawned()) return;
@@ -36,20 +34,31 @@ public class MainPhase {
             if (rc.hasFlag()) tryReturnFlag(rc);
             else {
                 // TODO: pass these variables as parameters to reduce bytecode use
+                System.out.println("setup static");
+                System.out.println(Clock.getBytecodesLeft());
                 FlagInfo[] nearbyEnemyFlags = rc.senseNearbyFlags(-1, OPPONENT);
                 MapInfo[] mapInfos = rc.senseNearbyMapInfos();
                 RobotInfo[] allies = rc.senseNearbyRobots(-1, ALLY);
                 RobotInfo[] enemies = rc.senseNearbyRobots(-1, OPPONENT);
+                System.out.println(Clock.getBytecodesLeft());
+
                 int actionZone = action(rc);
+                System.out.println(Clock.getBytecodesLeft());
+
                 if (actionZone != ZoneInfo.getZoneId(rc.getLocation())) {
                     Pathfind.moveToward(rc, ZONE_INFO[actionZone].getCenter(), true);
                 }
+                System.out.println(Clock.getBytecodesLeft());
+
                 tryCaptureFlag(rc, nearbyEnemyFlags);
                 tryAttack(rc);
+                System.out.println(Clock.getBytecodesLeft());
+
 //                tryBuildTrap(rc, mapInfos, allies, enemies);
 //                moveTowardFlag(rc, builder, nearbyEnemyFlags);
                 if (!rc.isSpawned()) return;
                 if (rc.isMovementReady()) Pathfind.explore(rc, allies);
+                System.out.println(Clock.getBytecodesLeft());
             }
             Comms.reportZoneInfo(rc);
         }

@@ -4,6 +4,8 @@ import battlecode.common.*;
 
 import java.util.ArrayList;
 
+import defaultplayer.util.FastIterableIntSet;
+import defaultplayer.util.FastIterableLocSet;
 import defaultplayer.util.ZoneInfo;
 
 import static defaultplayer.Constants.*;
@@ -134,21 +136,22 @@ public class Comms {
     }
 
     public static MapLocation[] getAllyFlagLocations(RobotController rc) throws GameActionException {
-        ArrayList<MapLocation> locs = new ArrayList<>();
+        FastIterableLocSet locs = new FastIterableLocSet(3);
         for (int i = 0; i < 3; i++) {
             MapLocation loc = getFlagLocation(rc, ALLY, i);
             if (loc != null) locs.add(loc);
         }
-        return locs.toArray(new MapLocation[0]);
+        System.out.println(locs.size());
+        return locs.toArray();
     }
 
     public static MapLocation[] getEnemyFlagLocations(RobotController rc) throws GameActionException {
-        ArrayList<MapLocation> locs = new ArrayList<>();
+        FastIterableLocSet locs = new FastIterableLocSet();
         for (int i = 0; i < 3; i++) {
             MapLocation loc = getFlagLocation(rc, OPPONENT, i);
             if (loc != null) locs.add(loc);
         }
-        return locs.toArray(new MapLocation[0]);
+        return locs.toArray();
     }
 
     private static void reportEnemyFlag(RobotController rc, int flagId, MapLocation flagLoc) throws GameActionException {

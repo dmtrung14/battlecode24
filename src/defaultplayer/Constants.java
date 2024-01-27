@@ -19,9 +19,10 @@ public class Constants {
     public static MapLocation[] SPAWN_ZONE_CENTERS;
 
     public static final int FLAG_RUSH_ROUNDS = 100;
-    public static final int EXPLORE_ROUNDS = 180;
+    public static int EXPLORE_ROUNDS;
 
     public static MapLocation[] ALLY_FLAGS = new MapLocation[3];
+
     public static MapLocation[] ENEMY_FLAGS_PING;
     public static MapLocation[] ENEMY_FLAGS_COMMS;
 
@@ -45,8 +46,8 @@ public class Constants {
 
     public static FastIterableLocSet EXPLORED = new FastIterableLocSet(200);
 
-    public static ArrayList<MapLocation> ENEMY_BORDER_LINE = new ArrayList<MapLocation>();
-    public static ArrayList<MapLocation> NEUTRAL_BORDERLINE = new ArrayList<MapLocation>();
+    public static FastIterableLocSet ENEMY_BORDER_LINE = new FastIterableLocSet(100);
+    public static FastIterableLocSet NEUTRAL_BORDERLINE = new FastIterableLocSet(100);
 
     public static int[] BUFFER = new int[64];
     public static int[] BUFFER_GIT = new int[64];

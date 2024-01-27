@@ -5,6 +5,7 @@ import battlecode.common.*;
 import java.util.Arrays;
 
 import static defaultplayer.Constants.*;
+import static defaultplayer.util.Micro.*;
 
 public strictfp class RobotPlayer {
     public static void run(RobotController rc) throws GameActionException {
@@ -17,9 +18,12 @@ public strictfp class RobotPlayer {
         while (true) {
             try {
                 Comms.loadComms(rc);
+                tryUpdateInfo(rc);
+                tryBuyGlobal(rc);
                 if (rc.getRoundNum() <= GameConstants.SETUP_ROUNDS) {
                     setup.run();
                 } else {
+                    rc.resign();
                     main.run();
                 }
                 Comms.postComms(rc);

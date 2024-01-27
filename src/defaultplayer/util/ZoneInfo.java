@@ -110,7 +110,7 @@ public class ZoneInfo {
         int col = zoneID % 10;
 
         // Initialize empty list for neighbors
-        List<Integer> neighbors = new ArrayList<>();
+        FastIterableIntSet neighbors = new FastIterableIntSet(15);
 
         // Check all surrounding cells within the table bounds
         for (int i = row - 1; i <= row + 1; i++) {

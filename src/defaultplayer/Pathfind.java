@@ -23,13 +23,6 @@ public class Pathfind {
         return new MapLocation(mapWidth / 2, mapHeight / 2);
     }
 
-    public static void spread(RobotController rc) throws GameActionException {
-        ArrayList<Direction> possible = new ArrayList<>();
-        for (Direction dir : DIRECTIONS) if (rc.canMove(dir)) possible.add(dir);
-        if (!possible.isEmpty()) {
-            rc.move(possible.get(RANDOM.nextInt(possible.size())));
-        }
-    }
 
     public static void explore(RobotController rc, RobotInfo[] robots) throws GameActionException {
         collectCrumbs(rc);
@@ -76,20 +69,21 @@ public class Pathfind {
 
 
     public static void bfsInSight(RobotController rc, MapLocation center) throws GameActionException {
-        Queue<MapLocation> queue = new LinkedList<>();
+        FastIterableLocSet queue = new FastIterableLocSet(300);
         FastIterableLocSet visited = new FastIterableLocSet(1000);
         int distance = 0;
-        int neutral = Integer.MAX_VALUE;
         queue.add(center);
-        while (!queue.isEmpty() && distance <= 4) {
+        visited.add(center);
+        while (!queue.isEmpty() && distance <= 3) {
             int size = queue.size();
+//            System.out.println(queue.size());
             for (int i = 0; i < size; i++) {
-                MapLocation loc = queue.remove();
-                visited.add(loc);
+                MapLocation loc = queue.get(0);
+                queue.remove(loc);
                 for (Direction dir : DIRECTIONS) {
-                    assert loc != null;
                     MapLocation newLoc = loc.add(dir);
                     if (!rc.canSenseLocation(newLoc) || visited.contains(newLoc)) continue;
+                    visited.add(newLoc);
                     MapInfo newLocInfo = rc.senseMapInfo(newLoc);
                     Team territory = newLocInfo.getTeamTerritory();
                     if (territory == OPPONENT && !newLocInfo.isWall()) {
@@ -98,8 +92,8 @@ public class Pathfind {
                     }
                     else if (!newLocInfo.isWall() && !newLocInfo.isDam() && territory == Team.NEUTRAL)
                         NEUTRAL_BORDERLINE.add(newLoc);
-                    if (Clock.getBytecodesLeft() < 1200) return;
                     else queue.add(newLoc);
+                    if (Clock.getBytecodesLeft() < 1500) return;
                 }
             }
             distance += 1;

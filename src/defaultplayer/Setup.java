@@ -39,10 +39,14 @@ public class Setup {
         Comms.init(rc);
         mapWidth = rc.getMapWidth();
         mapHeight = rc.getMapHeight();
+        EXPLORE_ROUNDS = 199 - Math.max(mapHeight, mapWidth)/2;
         SPAWN_ZONES = rc.getAllySpawnLocations();
+
         SPAWN_ZONE_CENTERS = new MapLocation[3];
         ALLY = rc.getTeam();
         OPPONENT = rc.getTeam().opponent();
+//        for (int i = 0 ; i < 3; i++) Comms.setFlagLocation(rc, ALLY, i, ALLY_FLAGS[i]);
+
         int numCenters = 0;
         for (MapLocation loc : SPAWN_ZONES) {
             boolean isCenter = true;
@@ -106,6 +110,7 @@ public class Setup {
                 }
                 if (rc.canMove(d)) {
                     rc.move(d);
+                    System.out.println("got here!");
                     Comms.setFlagLocation(rc, ALLY, myID - 1, rc.getLocation());
                     ALLY_FLAGS[myID - 1] = rc.getLocation();
                 }
@@ -183,6 +188,7 @@ public class Setup {
             if (!afterBuildTrap) buildAroundFlags();
             Pathfind.moveToward(rc, ALLY_FLAGS[myID - 1], false);
         } else if (isExplorer()) {
+//            if (rc.getRoundNum() > ) rc.resign();
             FlagInfo[] nearbyEnemyFlags = rc.senseNearbyFlags(-1, OPPONENT);
             MapInfo[] mapInfos = rc.senseNearbyMapInfos();
             RobotInfo[] allies = rc.senseNearbyRobots(-1, ALLY);

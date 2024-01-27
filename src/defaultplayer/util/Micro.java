@@ -6,7 +6,6 @@ import defaultplayer.Comms;
 import defaultplayer.Constants;
 import defaultplayer.Pathfind;
 
-import java.util.ArrayList;
 
 import static defaultplayer.Constants.*;
 import static defaultplayer.util.CheckWrapper.*;
@@ -270,7 +269,6 @@ public class Micro {
 
         for (int i = 0; i < 100; i++) {
             if (!isCriticalZone(i)) continue;
-            System.out.println(i);
             ZONE_INFO[i].setZoneInfo(
                     Comms.getZoneRobotsAlly(rc, i),
                     Comms.getZoneRobotsOpponent(rc, i),
