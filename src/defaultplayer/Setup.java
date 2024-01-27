@@ -41,7 +41,6 @@ public class Setup {
         mapHeight = rc.getMapHeight();
         EXPLORE_ROUNDS = 199 - Math.max(mapHeight, mapWidth)/2;
         SPAWN_ZONES = rc.getAllySpawnLocations();
-
         SPAWN_ZONE_CENTERS = new MapLocation[3];
         ALLY = rc.getTeam();
         OPPONENT = rc.getTeam().opponent();
@@ -97,6 +96,7 @@ public class Setup {
             };
             dirLoop:
             for (Direction d : dirs) {
+
                 MapLocation loc = rc.adjacentLocation(d);
                 for (MapInfo neighbor : rc.senseNearbyMapInfos(loc, 2)) {
                     if (neighbor.isDam()) continue dirLoop;
@@ -104,15 +104,18 @@ public class Setup {
                 // check if current flag location is at least 6 from both the other 2 flags
                 for (int j = 0; j < 3; j++) {
                     MapLocation fl = Comms.getFlagLocation(rc, ALLY, j);
-                    if (fl == null || j + 1 != Constants.myID && loc.distanceSquaredTo(fl) < 36) {
+                    if (fl != null && j + 1 != Constants.myID && loc.distanceSquaredTo(fl) < 36) {
                         continue dirLoop;
                     }
                 }
                 if (rc.canMove(d)) {
                     rc.move(d);
-                    System.out.println("got here!");
                     Comms.setFlagLocation(rc, ALLY, myID - 1, rc.getLocation());
+                    Comms.postComms(rc);
+                    Clock.yield();
+                    Comms.loadComms(rc);
                     ALLY_FLAGS[myID - 1] = rc.getLocation();
+                    break;
                 }
             }
         }

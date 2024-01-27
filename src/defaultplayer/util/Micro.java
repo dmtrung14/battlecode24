@@ -17,6 +17,7 @@ public class Micro {
         int bestZone = -1;
         double bestScore = Double.NEGATIVE_INFINITY;
         for (int i = 0; i < 100; i++) {
+
             if (!isCriticalZone(i)) continue;
             ZoneInfo zone = ZONE_INFO[i];
             double score = zone.getScore();
@@ -241,7 +242,7 @@ public class Micro {
         ALLY_FLAGS = Comms.getAllyFlagLocations(rc);
         NEIGHBORING_ZONES = ZoneInfo.getNeighbors(getZoneId(rc.getLocation()));
         updateFlagZones(rc);
-        updateZoneInfo(rc);
+//        updateZoneInfo(rc);
     }
 
     public static void updateFlagZones(RobotController rc) throws GameActionException {

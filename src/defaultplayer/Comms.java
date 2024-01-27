@@ -58,7 +58,7 @@ public class Comms {
 
     public static void clear(RobotController rc) throws GameActionException {
         for (int i = 0; i < 64; i++) {
-            writeSharedArrayBuffer(i, 0);
+            rc.writeSharedArray(i, 0);
         }
     }
     private static int symmetryId(Symmetry sym) {
@@ -121,6 +121,7 @@ public class Comms {
         int y = loc == null ? 61 : loc.y;
         int index = (ALLY == team ? ALLY_FLAG_LOC_START_INDEX : ENEMY_FLAG_LOC_START_INDEX) + 12 * flag;
         int value = (x << 6) + y;
+
         setBits(rc, index, value, 12);
     }
 
@@ -141,7 +142,6 @@ public class Comms {
             MapLocation loc = getFlagLocation(rc, ALLY, i);
             if (loc != null) locs.add(loc);
         }
-        System.out.println(locs.size());
         return locs.toArray();
     }
 

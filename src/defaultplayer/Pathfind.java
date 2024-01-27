@@ -76,7 +76,6 @@ public class Pathfind {
         visited.add(center);
         while (!queue.isEmpty() && distance <= 3) {
             int size = queue.size();
-//            System.out.println(queue.size());
             for (int i = 0; i < size; i++) {
                 MapLocation loc = queue.get(0);
                 queue.remove(loc);

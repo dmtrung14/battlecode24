@@ -28,8 +28,6 @@ public class Optimizer {
             if (i < ENEMY_FLAGS_COMMS.length) enemyFlags[i] = ENEMY_FLAGS_COMMS[i];
             else enemyFlags[i] = ENEMY_FLAGS_PING[i - ENEMY_FLAGS_COMMS.length];
         }
-        int toGuard = toReturnAndGuard(rc);
-        if (toGuard != -1) return ALLY_FLAGS[toGuard];
         return enemyFlags.length > 0 ? enemyFlags[myID % enemyFlags.length] : null;
     }
 

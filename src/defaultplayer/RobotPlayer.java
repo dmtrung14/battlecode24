@@ -23,7 +23,6 @@ public strictfp class RobotPlayer {
                 if (rc.getRoundNum() <= GameConstants.SETUP_ROUNDS) {
                     setup.run();
                 } else {
-                    rc.resign();
                     main.run();
                 }
                 Comms.postComms(rc);
