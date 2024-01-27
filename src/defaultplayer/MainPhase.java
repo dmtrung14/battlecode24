@@ -6,7 +6,6 @@ import defaultplayer.util.ZoneInfo;
 import static defaultplayer.Constants.*;
 import static defaultplayer.util.CheckWrapper.*;
 import static defaultplayer.util.Micro.*;
-import static defaultplayer.util.Optimizer.nearestFlag;
 
 public class MainPhase {
     private final RobotController rc;
@@ -47,12 +46,10 @@ public class MainPhase {
                 }
                 tryCaptureFlag(rc, nearbyEnemyFlags);
                 tryAttack(rc);
-                tryBuildTrap(rc, mapInfos, allies, enemies);
-                moveTowardFlag(rc, builder, nearbyEnemyFlags);
+//                tryBuildTrap(rc, mapInfos, allies, enemies);
+//                moveTowardFlag(rc, builder, nearbyEnemyFlags);
                 if (!rc.isSpawned()) return;
-                tryHeal(rc);
-                if (!rc.isSpawned()) return;
-                Pathfind.exploreDVD(rc);
+                if (rc.isMovementReady()) Pathfind.explore(rc, allies);
             }
             Comms.reportZoneInfo(rc);
         }

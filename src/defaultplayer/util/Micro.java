@@ -269,12 +269,12 @@ public class Micro {
         int zoneOfRobotY = zoneOfRobot % 10;
 
         for (int i = 0; i < 100; i++) {
-//            if (!isCriticalZone(i)) continue;
+            if (!isCriticalZone(i)) continue;
+            System.out.println(i);
             ZONE_INFO[i].setZoneInfo(
                     Comms.getZoneRobotsAlly(rc, i),
                     Comms.getZoneRobotsOpponent(rc, i),
                     false
-//                    Comms.zoneHasTraps(rc, i)
             );
 
             ZONE_INFO[i].updateWeight(zoneOfRobotX, zoneOfRobotY);
@@ -326,13 +326,5 @@ public class Micro {
             }
         }
         return guard;
-    }
-
-    public static boolean toHelpCaptureFlag() {
-        return false;
-    }
-
-    public static boolean toRushCenter() {
-        return false;
     }
 }
