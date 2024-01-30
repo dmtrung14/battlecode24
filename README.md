@@ -1,11 +1,18 @@
-# Battlecode 2024 Scaffold
+# zhugeduck Battlecode24 Repository
 
-This is the Battlecode 2024 scaffold, containing an `examplefuncsplayer`. Read https://play.battlecode.org/bc24/getting-started!
+This is our team zhugeduck's submission for MIT Battlecode 2024.
 
-**We are using a rewritten version of the client this year, so please let teh devs know 
-if you encounter any issues or have any feedback!**
+## Contributors
+- Trung Dang: University of Massachusetts Amherst
+- Garrett Hinkley: University of Massachusetts Amherst
+- Hoang Anh Nguyen:  VNU University of Engineering and Technology
+- Minh Do: University of Massachusetts Amherst
 
-### Project Structure
+## Contest Results
+
+We terminated the development process by the end of the International Qualifier. We got a rating of 1743, which ranked 7/100 among international teams and 32/400 overall. 
+
+## Project Structure
 
 - `README.md`
     This file.
@@ -13,8 +20,6 @@ if you encounter any issues or have any feedback!**
     The Gradle build file used to build and run players.
 - `src/`
     Player source code.
-- `test/`
-    Player test code.
 - `client/`
     Contains the client. The proper executable can be found in this folder (don't move this!)
 - `build/`
@@ -28,24 +33,7 @@ if you encounter any issues or have any feedback!**
 - `gradle/`
     Contains files used by the Gradle wrapper scripts. Can be safely ignored.
 
-### How to get started
-
-You are free to directly edit `examplefuncsplayer`.
-However, we recommend you make a new bot by copying `examplefuncsplayer` to a new package under the `src` folder.
-
-### Useful Commands
-
-- `./gradlew build`
-    Compiles your player
-- `./gradlew run`
-    Runs a game with the settings in gradle.properties
-- `./gradlew update`
-    Update configurations for the latest version -- run this often
-- `./gradlew zipForSubmit`
-    Create a submittable zip file
-- `./gradlew tasks`
-    See what else you can do!
-
+### Postmortem [Coming soon]
 
 ### Configuration 
 
